@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createHmac, randomBytes } from 'crypto';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'rehan.ibex04@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '__ADMIN_PASSWORD__';
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) throw new Error(`Missing required env var: ${name}`);
+  return val;
+}
+
+const ADMIN_EMAIL = requireEnv('ADMIN_EMAIL');
+const ADMIN_PASSWORD = requireEnv('ADMIN_PASSWORD');
 const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
 
 function signToken(email: string) {
@@ -17,17 +23,22 @@ function signToken(email: string) {
 }
 
 export async function POST(request: Request) {
-  const { email, password } = await request.json();
+  try {
+    const { email, password } = await request.json();
 
-  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const token = signToken(email);
+
+    return NextResponse.json({
+      success: true,
+      token,
+      user: { email },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Server configuration error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const token = signToken(email);
-
-  return NextResponse.json({
-    success: true,
-    token,
-    user: { email },
-  });
 }

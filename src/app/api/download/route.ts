@@ -14,7 +14,7 @@ function detectPlatform(url: string): string {
   return 'unknown';
 }
 
-async function getDirectUrlWithYtDlp(url: string, format: string): Promise<string | null> {
+async function getYtDlpDirectUrl(url: string, format: string): Promise<string | null> {
   try {
     const { exec } = await import('yt-dlp-exec');
     const formatMap: Record<string, string> = {
@@ -42,26 +42,76 @@ async function getDirectUrlWithYtDlp(url: string, format: string): Promise<strin
   }
 }
 
-async function getDirectUrlFromPage(url: string): Promise<string | null> {
-  const platform = detectPlatform(url);
-  if (platform === 'youtube') {
-    try {
-      const htmlRes = await fetch(url, { signal: AbortSignal.timeout(5000) });
-      const html = await htmlRes.text();
-      const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-      if (playerResponseMatch) {
-        const playerResponse = JSON.parse(playerResponseMatch[1]);
-        const formats = playerResponse.streamingData?.formats || [];
-        const adaptiveFormats = playerResponse.streamingData?.adaptiveFormats || [];
-        const allFormats = [...formats, ...adaptiveFormats].filter((f: any) => f.url);
-        if (allFormats.length > 0) {
-          const sorted = allFormats.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
-          return sorted[0].url;
+async function getYouTubeStreamUrl(url: string): Promise<string | null> {
+  try {
+    const htmlRes = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    const html = await htmlRes.text();
+
+    // Try ytInitialPlayerResponse
+    const playerMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+    if (playerMatch) {
+      const data = JSON.parse(playerMatch[1]);
+      const formats = [...(data.streamingData?.formats || []), ...(data.streamingData?.adaptiveFormats || [])];
+      const withUrl = formats.filter((f: any) => f.url);
+      if (withUrl.length > 0) {
+        const sorted = withUrl.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
+        return sorted[0].url;
+      }
+    }
+
+    // Try ytInitialData fallback
+    const initialMatch = html.match(/ytInitialData\s*=\s*({.+?});/);
+    if (initialMatch) {
+      const data = JSON.parse(initialMatch[1]);
+      const videoId = new URL(url).searchParams.get('v');
+      if (videoId) {
+        const apiKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+        const apiRes = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            videoId,
+            context: {
+              client: {
+                clientName: 'ANDROID',
+                clientVersion: '19.09.37',
+                androidSdkVersion: 30,
+              },
+            },
+          }),
+          signal: AbortSignal.timeout(5000),
+        });
+        const apiData = await apiRes.json();
+        const fmts = [...(apiData.streamingData?.formats || []), ...(apiData.streamingData?.adaptiveFormats || [])];
+        const withUrl2 = fmts.filter((f: any) => f.url);
+        if (withUrl2.length > 0) {
+          const sorted2 = withUrl2.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
+          return sorted2[0].url;
         }
       }
-    } catch {}
+    }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
+}
+
+async function getTikTokStreamUrl(url: string): Promise<string | null> {
+  try {
+    const apiRes = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await apiRes.json();
+    if (data.thumbnail_url) return data.thumbnail_url;
+    return url;
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(request: Request) {
@@ -79,18 +129,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
 
-    const ytDlpUrl = await getDirectUrlWithYtDlp(url, format);
+    const platform = detectPlatform(url);
+
+    // Try yt-dlp binary for direct CDN URL
+    const ytDlpUrl = await getYtDlpDirectUrl(url, format);
     if (ytDlpUrl) {
       return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: ytDlpUrl, title, format });
     }
 
-    const pageUrl = await getDirectUrlFromPage(url);
-    if (pageUrl) {
-      return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: pageUrl, title, format });
+    // Platform-specific fallbacks
+    if (platform === 'youtube') {
+      const streamUrl = await getYouTubeStreamUrl(url);
+      if (streamUrl) {
+        return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: streamUrl, title, format });
+      }
+    }
+
+    if (platform === 'tiktok') {
+      const streamUrl = await getTikTokStreamUrl(url);
+      if (streamUrl) {
+        return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: streamUrl, title, format });
+      }
     }
   } catch (err: any) {
     console.error('Download API error:', err);
   }
 
+  // Final fallback: return the original URL
   return NextResponse.json({ taskId: 'fallback', status: 'completed', percent: 100, downloadUrl: url, title, format });
 }

@@ -10,12 +10,12 @@ function AdminContent({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/admin/login';
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return <div style={{ colorScheme: 'dark' }}>{children}</div>;
   }
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
+      <div className="flex min-h-screen bg-neutral-950 text-neutral-100" style={{ colorScheme: 'dark' }}>
         <Sidebar />
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
           {children}

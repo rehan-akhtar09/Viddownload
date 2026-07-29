@@ -57,15 +57,24 @@ html:not(.dark) .backdrop-blur-md {
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05) !important;
 }
 
-html:not(.dark) input {
-  background-color: rgba(0, 0, 0, 0.02) !important;
-  color: #0f172a !important;
-  border-color: rgba(15, 23, 42, 0.1) !important;
+html:not(.dark) input:not(.admin-input),
+html:not(.dark) .not-admin input {
+  background-color: rgba(0, 0, 0, 0.02);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.1);
 }
 
-html:not(.dark) input:focus {
-  background-color: #ffffff !important;
-  border-color: rgba(239, 68, 68, 0.8) !important;
+html:not(.dark) input:focus:not(.admin-input) {
+  background-color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
+.admin-input,
+.admin-select,
+.admin-textarea,
+select.admin-input,
+textarea.admin-input {
+  color-scheme: dark;
 }
 
 html:not(.dark) button:not(.bg-red-600):not(.from-red-600) {

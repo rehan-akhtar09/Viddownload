@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   description: 'Download videos from YouTube, TikTok, Instagram, Twitter, Facebook, and more in high quality (MP4/MP3) instantly.',
   keywords: ['video downloader', 'youtube to mp3', 'tiktok downloader', 'instagram video downloader', 'twitter video downloader'],
   authors: [{ name: 'All Video Downloader Team' }],
+  icons: {
+    icon: '/favicon.svg',
+  },
   openGraph: {
     title: 'All Video Downloader - Universal Video Downloader',
     description: 'Download videos from any site in high quality instantly with zero ads.',

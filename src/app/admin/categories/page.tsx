@@ -54,7 +54,7 @@ export default function CategoriesPage() {
       <form onSubmit={add} className="flex gap-2">
         <input
           type="text" value={name} onChange={(e) => setName(e.target.value)}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+          className="admin-input flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
           placeholder="New category name"
         />
         <button type="submit" disabled={adding || !name.trim()}

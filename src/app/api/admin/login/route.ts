@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac } from 'crypto';
+import { JWT_SECRET } from '@/lib/admin-auth';
 
 function requireEnv(name: string): string {
   const val = process.env[name];
@@ -9,7 +10,6 @@ function requireEnv(name: string): string {
 
 const ADMIN_EMAIL = requireEnv('ADMIN_EMAIL');
 const ADMIN_PASSWORD = requireEnv('ADMIN_PASSWORD');
-const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
 
 function signToken(email: string) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');

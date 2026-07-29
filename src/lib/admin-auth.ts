@@ -1,6 +1,6 @@
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual, randomBytes } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
 
 export function verifyToken(token: string): { email: string } | null {
   try {
@@ -33,3 +33,5 @@ export function getTokenFromRequest(request: Request): string | null {
   }
   return null;
 }
+
+export { JWT_SECRET };

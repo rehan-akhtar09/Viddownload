@@ -105,6 +105,25 @@ export default function Home() {
         throw new Error(data.error || 'Failed to start download');
       }
 
+      // If download completed immediately (fallback mode), open directly
+      if (data.status === 'completed' && data.fallbackUrl) {
+        setTaskStatus('completed');
+        setTaskPercent(100);
+
+        const newItem: HistoryItem = {
+          id: data.taskId || 'fallback',
+          thumbnail: activeMetadata?.thumbnail || '',
+          title: activeMetadata?.title || 'Video Download',
+          format: label,
+          date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+          url: activeMetadata?.url || '',
+        };
+        setHistory(prev => [newItem, ...prev].slice(0, 20));
+
+        window.open(data.fallbackUrl, '_blank');
+        return;
+      }
+
       // Track taskId
       setActiveTaskId(data.taskId);
     } catch (err: unknown) {

@@ -1,36 +1,27 @@
 import { NextResponse } from 'next/server';
-import { activeTasks, startDownload, DownloadTask } from '@/lib/yt-dlp';
-import crypto from 'crypto';
 
 export async function POST(request: Request) {
   try {
-    const { url, format, title } = await request.json();
+    const { url, format } = await request.json();
 
-    if (!url || !format || !title) {
-      return NextResponse.json({ error: 'Missing required parameters: url, format, and title are required.' }, { status: 400 });
+    if (!url) {
+      return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
 
-    const taskId = crypto.randomUUID();
-
-    // Register task in the memory store
-    const newTask: DownloadTask = {
-      id: taskId,
-      url,
-      format,
-      percent: 0,
+    // On Vercel/Python not available, redirect to source URL
+    return NextResponse.json({
+      taskId: 'fallback',
+      status: 'completed',
+      percent: 100,
       speed: '0 MB/s',
-      eta: 'Starting...',
-      status: 'pending',
-    };
-
-    activeTasks.set(taskId, newTask);
-
-    // Kick off download asynchronously so client isn't blocked waiting for download to complete
-    startDownload(taskId, url, format, title);
-
-    return NextResponse.json({ taskId });
+      eta: '00:00',
+      url: url,
+      format: format || 'best',
+      fallbackUrl: url,
+      message: 'Download directly from the source',
+    });
   } catch (err: any) {
     console.error('Download API error:', err);
-    return NextResponse.json({ error: 'Failed to initiate download job.' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to initiate download.' }, { status: 500 });
   }
 }

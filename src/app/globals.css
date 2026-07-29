@@ -16,11 +16,16 @@
   --foreground: #f1f5f9;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Custom premium scrollbar styling */

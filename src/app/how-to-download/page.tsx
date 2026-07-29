@@ -8,8 +8,8 @@ const steps = [
   },
   {
     num: '2',
-    title: 'Paste into VeloDown',
-    desc: 'Go to VeloDown and paste the URL into the input field on the home page. Click the "Analyze" button to fetch video information.',
+    title: 'Paste into All Video Downloader',
+    desc: 'Go to All Video Downloader and paste the URL into the input field on the home page. Click the "Analyze" button to fetch video information.',
   },
   {
     num: '3',

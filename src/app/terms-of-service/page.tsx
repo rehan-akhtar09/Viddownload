@@ -16,13 +16,13 @@ export default function TermsOfService() {
 
         <section className="space-y-6 text-sm md:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
           <p>
-            By accessing or using VeloDown (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Service.
+            By accessing or using All Video Downloader (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Service.
           </p>
 
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-neutral-900 dark:text-white">1. Service Description</h2>
             <p>
-              VeloDown provides a video downloading tool that allows users to download videos from publicly accessible URLs for personal use. The Service is provided &quot;as is&quot; without any warranties.
+              All Video Downloader provides a video downloading tool that allows users to download videos from publicly accessible URLs for personal use. The Service is provided &quot;as is&quot; without any warranties.
             </p>
           </div>
 
@@ -41,14 +41,14 @@ export default function TermsOfService() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-neutral-900 dark:text-white">3. Intellectual Property</h2>
             <p>
-              The VeloDown name, logo, and website design are our intellectual property. You may not reproduce, distribute, or create derivative works without our permission. Content downloaded through the Service remains the intellectual property of its respective owners.
+              The All Video Downloader name, logo, and website design are our intellectual property. You may not reproduce, distribute, or create derivative works without our permission. Content downloaded through the Service remains the intellectual property of its respective owners.
             </p>
           </div>
 
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-neutral-900 dark:text-white">4. Limitation of Liability</h2>
             <p>
-              VeloDown shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the Service. The Service is provided for personal use only.
+              All Video Downloader shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of the Service. The Service is provided for personal use only.
             </p>
           </div>
 

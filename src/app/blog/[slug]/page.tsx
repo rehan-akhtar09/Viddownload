@@ -111,7 +111,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
         <div className="pt-8 border-t border-black/10 dark:border-white/10 text-xs text-neutral-400 dark:text-neutral-500">
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />
-            {post.author || 'VeloDown Team'}
+            {post.author || 'AVD Team'}
           </span>
         </div>
       </article>

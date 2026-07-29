@@ -27,7 +27,7 @@ export default function Header() {
             <Play className="h-5 w-5 fill-white text-white translate-x-[1px]" />
           </div>
           <span className="font-extrabold text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-black to-neutral-600 dark:from-white dark:to-neutral-400">
-            VeloDown
+            All Video Downloader
           </span>
         </Link>
 

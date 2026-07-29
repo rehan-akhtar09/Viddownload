@@ -2,12 +2,12 @@ import { HelpCircle } from 'lucide-react';
 
 const faqs = [
   {
-    q: 'What is VeloDown?',
-    a: 'VeloDown is a free online video downloader that supports thousands of websites including YouTube, TikTok, Instagram, Twitter, Facebook, Vimeo, and more. Paste any video URL to download it in your preferred quality and format.',
+    q: 'What is All Video Downloader?',
+    a: 'All Video Downloader is a free online video downloader that supports thousands of websites including YouTube, TikTok, Instagram, Twitter, Facebook, Vimeo, and more. Paste any video URL to download it in your preferred quality and format.',
   },
   {
-    q: 'Is VeloDown free to use?',
-    a: 'Yes, VeloDown is completely free. There are no hidden charges, premium tiers, or usage limits.',
+    q: 'Is All Video Downloader free to use?',
+    a: 'Yes, All Video Downloader is completely free. There are no hidden charges, premium tiers, or usage limits.',
   },
   {
     q: 'What video formats are supported?',
@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: 'Which sites are supported?',
-    a: 'VeloDown supports YouTube, TikTok, Instagram (reels, posts, stories), Twitter/X, Facebook, Vimeo, Dailymotion, Twitch, Reddit, LinkedIn, Pinterest, and thousands of other sites through the yt-dlp engine.',
+    a: 'All Video Downloader supports YouTube, TikTok, Instagram (reels, posts, stories), Twitter/X, Facebook, Vimeo, Dailymotion, Twitch, Reddit, LinkedIn, Pinterest, and thousands of other sites through the yt-dlp engine.',
   },
   {
     q: 'Is there a limit on video length or size?',
@@ -30,8 +30,8 @@ const faqs = [
     a: 'Absolutely. We do not log IP addresses, track downloads, require accounts, or store any personal information. Your privacy is our priority.',
   },
   {
-    q: 'Can I use VeloDown commercially?',
-    a: 'VeloDown is intended for personal use only. Commercial use requires prior written consent. You must respect content creators\' copyrights.',
+    q: 'Can I use All Video Downloader commercially?',
+    a: 'All Video Downloader is intended for personal use only. Commercial use requires prior written consent. You must respect content creators\' copyrights.',
   },
   {
     q: 'Why is my download slow?',
@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     q: 'What should I do if a site is not supported?',
-    a: 'VeloDown uses yt-dlp which supports thousands of sites. If a particular site doesn\'t work, please contact us with the URL and we\'ll investigate.',
+    a: 'All Video Downloader uses yt-dlp which supports thousands of sites. If a particular site doesn\'t work, please contact us with the URL and we\'ll investigate.',
   },
   {
     q: 'Do I need to create an account?',
@@ -47,7 +47,7 @@ const faqs = [
   },
   {
     q: 'Can I download YouTube playlists or entire channels?',
-    a: 'Currently, VeloDown supports single video downloads only. Playlist and channel download may be added in a future update.',
+    a: 'Currently, All Video Downloader supports single video downloads only. Playlist and channel download may be added in a future update.',
   },
 ];
 

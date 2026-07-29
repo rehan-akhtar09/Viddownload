@@ -27,17 +27,17 @@ export default function About() {
             <Info className="h-5 w-5 text-red-600" />
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight">About VeloDown</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight">About All Video Downloader</h1>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">Built for speed, designed for everyone</p>
           </div>
         </div>
 
         <section className="space-y-6 text-sm md:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
           <p>
-            VeloDown was created to solve a simple problem: downloading video content from the web should be fast, free, and hassle-free. No sign-ups, no ads, no file limits — just paste a link and download.
+            All Video Downloader was created to solve a simple problem: downloading video content from the web should be fast, free, and hassle-free. No sign-ups, no ads, no file limits — just paste a link and download.
           </p>
           <p>
-            We support the widest range of platforms of any free online downloader. From major social media networks to niche video platforms, VeloDown works with thousands of sites using the latest version of yt-dlp under the hood.
+            We support the widest range of platforms of any free online downloader. From major social media networks to niche video platforms, All Video Downloader works with thousands of sites using the latest version of yt-dlp under the hood.
           </p>
           <p>
             Our mission is to provide a tool that respects your privacy while delivering maximum utility. We do not store your downloaded files, track your activity, or require an account. Every download is processed on-the-fly and served directly to you.
@@ -45,7 +45,7 @@ export default function About() {
         </section>
 
         <section className="space-y-6">
-          <h2 className="text-2xl font-bold tracking-tight">Why VeloDown?</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Why All Video Downloader?</h2>
           <div className="grid gap-4">
             {features.map((f) => (
               <div key={f.title} className="flex items-start gap-4 p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10">

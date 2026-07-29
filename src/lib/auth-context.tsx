@@ -14,7 +14,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const TOKEN_KEY = 'velodown_admin_token';
+const TOKEN_KEY = 'avd_admin_token';
 
 const AuthContext = createContext<AuthContextType>({
   user: null,

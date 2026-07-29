@@ -21,7 +21,7 @@ export default function Footer() {
                 <Play className="h-4 w-4 fill-white text-white translate-x-[1px]" />
               </div>
               <span className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-black to-neutral-600 dark:from-white dark:to-neutral-400">
-                VeloDown
+                All Video Downloader
               </span>
             </div>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
@@ -66,7 +66,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 flex items-center justify-center gap-4">
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            &copy; {new Date().getFullYear()} VeloDown. All rights reserved.
+            &copy; {new Date().getFullYear()} All Video Downloader. All rights reserved.
           </p>
           <Link href="/admin" className="text-xs text-neutral-500 hover:text-red-400 transition-colors">
             Admin

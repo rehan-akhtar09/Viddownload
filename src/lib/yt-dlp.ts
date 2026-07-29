@@ -49,12 +49,12 @@ interface YtDlpMetadata {
 // =============================================================================
 
 const globalTaskStore = globalThis as typeof globalThis & {
-  __veloDownActiveTasks?: Map<string, DownloadTask>;
+  __avdActiveTasks?: Map<string, DownloadTask>;
 };
 
 export const activeTasks =
-  globalTaskStore.__veloDownActiveTasks ??
-  (globalTaskStore.__veloDownActiveTasks = new Map<string, DownloadTask>());
+  globalTaskStore.__avdActiveTasks ??
+  (globalTaskStore.__avdActiveTasks = new Map<string, DownloadTask>());
 
 // =============================================================================
 // Caching — invalidate after 30 minutes (keyed by URL to support any site)

@@ -16,7 +16,7 @@ export default function DMCA() {
 
         <section className="space-y-6 text-sm md:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
           <p>
-            VeloDown respects the intellectual property rights of others and expects its users to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond promptly to notices of alleged copyright infringement.
+            All Video Downloader respects the intellectual property rights of others and expects its users to do the same. In accordance with the Digital Millennium Copyright Act (DMCA), we will respond promptly to notices of alleged copyright infringement.
           </p>
 
           <div className="space-y-4">
@@ -40,7 +40,7 @@ export default function DMCA() {
               Please send DMCA notices to:
             </p>
             <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10">
-              <p className="font-medium text-neutral-900 dark:text-white">VeloDown Copyright Agent</p>
+              <p className="font-medium text-neutral-900 dark:text-white">All Video Downloader Copyright Agent</p>
               <a href="mailto:rehan.ibex04@gmail.com" className="text-red-600 dark:text-red-400 hover:underline">
                 rehan.ibex04@gmail.com
               </a>
@@ -57,14 +57,14 @@ export default function DMCA() {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Repeat Infringers</h2>
             <p>
-              VeloDown reserves the right to terminate the accounts of users who are repeat infringers of intellectual property rights.
+              All Video Downloader reserves the right to terminate the accounts of users who are repeat infringers of intellectual property rights.
             </p>
           </div>
 
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Disclaimer</h2>
             <p>
-              VeloDown is a video downloading tool that processes publicly accessible URLs. We do not host, store, or distribute copyrighted content. Users are responsible for ensuring they have the right to download any content and must comply with applicable copyright laws.
+              All Video Downloader is a video downloading tool that processes publicly accessible URLs. We do not host, store, or distribute copyrighted content. Users are responsible for ensuring they have the right to download any content and must comply with applicable copyright laws.
             </p>
           </div>
         </section>

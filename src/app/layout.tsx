@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VeloDown - Universal Video Downloader',
+  title: 'All Video Downloader - Universal Video Downloader',
   description: 'Download videos from YouTube, TikTok, Instagram, Twitter, Facebook, and more in high quality (MP4/MP3) instantly.',
   keywords: ['video downloader', 'youtube to mp3', 'tiktok downloader', 'instagram video downloader', 'twitter video downloader'],
-  authors: [{ name: 'VeloDown Team' }],
+  authors: [{ name: 'All Video Downloader Team' }],
   openGraph: {
-    title: 'VeloDown - Universal Video Downloader',
+    title: 'All Video Downloader - Universal Video Downloader',
     description: 'Download videos from any site in high quality instantly with zero ads.',
     type: 'website',
   },

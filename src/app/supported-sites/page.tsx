@@ -38,7 +38,7 @@ export default function SupportedSites() {
         </div>
 
         <p className="text-sm md:text-base text-neutral-600 dark:text-neutral-300 leading-relaxed">
-          VeloDown is powered by yt-dlp, which supports over 1,700 websites and platforms. Here are some of the most popular ones we support:
+          All Video Downloader is powered by yt-dlp, which supports over 1,700 websites and platforms. Here are some of the most popular ones we support:
         </p>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -65,7 +65,7 @@ export default function SupportedSites() {
 
         <section className="text-sm md:text-base text-neutral-500 dark:text-neutral-400 border-t border-black/10 dark:border-white/10 pt-8">
           <p>
-            Don&apos;t see your favorite site? Paste any video URL into VeloDown and try it. If it doesn&apos;t work, let us know at{' '}
+            Don&apos;t see your favorite site? Paste any video URL into All Video Downloader and try it. If it doesn&apos;t work, let us know at{' '}
             <a href="mailto:rehan.ibex04@gmail.com" className="text-red-600 dark:text-red-400 hover:underline">
               rehan.ibex04@gmail.com
             </a>{' '}

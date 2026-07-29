@@ -19,7 +19,7 @@ export default function Sidebar() {
     <aside className="w-64 min-h-screen bg-neutral-900 border-r border-white/10 flex flex-col shrink-0">
       <div className="p-5 border-b border-white/10">
         <Link href="/admin" className="font-extrabold text-lg text-white tracking-wider">
-          VeloDown Admin
+          AVD Admin
         </Link>
       </div>
       <nav className="flex-1 p-3 space-y-1">

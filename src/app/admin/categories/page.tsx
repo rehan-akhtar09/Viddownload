@@ -49,12 +49,12 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6 max-w-lg">
-      <h1 className="text-2xl font-bold text-white">Categories</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
 
       <form onSubmit={add} className="flex gap-2">
         <input
           type="text" value={name} onChange={(e) => setName(e.target.value)}
-          className="admin-input flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
           placeholder="New category name"
         />
         <button type="submit" disabled={adding || !name.trim()}
@@ -65,17 +65,17 @@ export default function CategoriesPage() {
 
       <div className="space-y-2">
         {cats.map((c) => (
-          <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-900 border border-white/10">
+          <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200 shadow-sm">
             <div>
-              <p className="text-sm font-medium text-white">{c.name}</p>
-              <p className="text-xs text-neutral-500">/{c.slug}</p>
+              <p className="text-sm font-medium text-gray-900">{c.name}</p>
+              <p className="text-xs text-gray-500">/{c.slug}</p>
             </div>
-            <button onClick={() => remove(c.id)} className="p-2 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-600/10 transition-all">
+            <button onClick={() => remove(c.id)} className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all">
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
-        {cats.length === 0 && <p className="text-sm text-neutral-500 text-center py-8">No categories yet</p>}
+        {cats.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No categories yet</p>}
       </div>
     </div>
   );

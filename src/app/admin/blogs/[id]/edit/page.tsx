@@ -31,12 +31,12 @@ export default function EditBlogPage() {
   }
 
   if (!blog) {
-    return <p className="text-neutral-500">Blog not found</p>;
+    return         <p className="text-gray-500">Blog not found</p>;
   }
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-bold text-white">Edit Blog Post</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Edit Blog Post</h1>
       <BlogEditor existing={blog} />
     </div>
   );

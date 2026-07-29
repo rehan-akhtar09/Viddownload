@@ -27,41 +27,41 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-white/10">
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-10 w-10 rounded-xl bg-red-600/10 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-red-400" />
+            <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <FileText className="h-5 w-5 text-red-600" />
             </div>
-            <span className="text-2xl font-black text-white">{blogCount}</span>
+            <span className="text-2xl font-black text-gray-900">{blogCount}</span>
           </div>
-          <p className="text-sm text-neutral-400">Total Blogs</p>
+          <p className="text-sm text-gray-500">Total Blogs</p>
         </div>
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-white/10">
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-10 w-10 rounded-xl bg-red-600/10 flex items-center justify-center">
-              <FolderTree className="h-5 w-5 text-red-400" />
+            <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <FolderTree className="h-5 w-5 text-red-600" />
             </div>
-            <span className="text-2xl font-black text-white">{catCount}</span>
+            <span className="text-2xl font-black text-gray-900">{catCount}</span>
           </div>
-          <p className="text-sm text-neutral-400">Categories</p>
+          <p className="text-sm text-gray-500">Categories</p>
         </div>
         <Link href="/admin/blogs/new"
-          className="p-5 rounded-2xl bg-red-600/10 border border-red-600/20 hover:bg-red-600/20 transition-colors flex items-center gap-3">
-          <Plus className="h-5 w-5 text-red-400" />
-          <span className="font-semibold text-sm text-red-400">New Blog Post</span>
+          className="p-5 rounded-2xl bg-red-50 border border-red-200 hover:bg-red-100 transition-colors flex items-center gap-3">
+          <Plus className="h-5 w-5 text-red-600" />
+          <span className="font-semibold text-sm text-red-700">New Blog Post</span>
         </Link>
       </div>
 
       {recentBlogs.length > 0 && (
-        <div className="p-5 rounded-2xl bg-neutral-900 border border-white/10">
-          <h2 className="font-bold text-white mb-3">Recent Blogs</h2>
+        <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-sm">
+          <h2 className="font-bold text-gray-900 mb-3">Recent Blogs</h2>
           <div className="space-y-2">
             {recentBlogs.map((b) => (
               <Link key={b.id} href={'/admin/blogs/' + b.id + '/edit'}
-                className="block px-3 py-2 rounded-xl bg-neutral-800 text-sm text-neutral-300 hover:bg-neutral-700 transition-colors">
+                className="block px-3 py-2 rounded-xl bg-gray-50 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                 {b.title}
               </Link>
             ))}

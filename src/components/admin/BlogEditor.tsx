@@ -134,65 +134,65 @@ export default function BlogEditor({ existing }: Props) {
     <div className="space-y-5">
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Title</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
           <input type="text" value={title} onChange={(e) => handleTitleChange(e.target.value)}
-            className="admin-input w-full px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
             placeholder="Blog post title" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Slug</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
           <input type="text" value={slug} onChange={(e) => setSlug(generateSlug(e.target.value))}
-            className="admin-input w-full px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
             placeholder="blog-post-slug" />
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Category</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
           <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
-            className="admin-select w-full px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40">
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40">
             <option value="">No category</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1">Excerpt</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Excerpt</label>
           <input type="text" value={excerpt} onChange={(e) => setExcerpt(e.target.value)}
-            className="admin-input w-full px-4 py-2.5 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
             placeholder="Brief summary" />
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-neutral-300">Content</label>
-          <div className="flex items-center gap-1 bg-neutral-900 rounded-xl p-1 border border-white/10">
+          <label className="block text-sm font-medium text-gray-700">Content</label>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 border border-gray-200">
             <button type="button" onClick={() => switchMode('text')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${inputMode === 'text' ? 'bg-red-600 text-white' : 'text-neutral-400 hover:text-white'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${inputMode === 'text' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
               <Eye className="h-3.5 w-3.5 inline mr-1" />Text
             </button>
             <button type="button" onClick={() => switchMode('html')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${inputMode === 'html' ? 'bg-red-600 text-white' : 'text-neutral-400 hover:text-white'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${inputMode === 'html' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
               <Code className="h-3.5 w-3.5 inline mr-1" />HTML
             </button>
           </div>
         </div>
         {inputMode === 'html' ? (
           <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={20}
-            className="admin-textarea w-full px-4 py-3 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/40 resize-y"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/40 resize-y"
             placeholder="Write your blog content in HTML..." />
         ) : (
           <textarea value={textContent} onChange={(e) => handleTextChange(e.target.value)} rows={20}
-            className="admin-textarea w-full px-4 py-3 rounded-xl border border-white/10 bg-neutral-900 text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 resize-y"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40 resize-y"
             placeholder="Write your blog content here..." />
         )}
       </div>
 
       {content && (
-        <div className="border border-white/10 rounded-xl p-4 bg-neutral-900/50">
-          <p className="text-xs text-neutral-500 mb-2">Preview</p>
-          <div className="prose prose-invert prose-sm max-w-none prose-headings:text-white prose-a:text-red-400 prose-strong:text-white prose-code:text-red-300 prose-pre:bg-neutral-800"
+        <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm">
+          <p className="text-xs text-gray-500 mb-2">Preview</p>
+          <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-a:text-red-600 prose-strong:text-gray-900 prose-code:text-red-700 prose-pre:bg-gray-100 prose-pre:border prose-pre:border-gray-200"
             dangerouslySetInnerHTML={{ __html: inputMode === 'text' ? textToHtml(textContent) : content }} />
         </div>
       )}
@@ -203,7 +203,7 @@ export default function BlogEditor({ existing }: Props) {
           {saving ? 'Saving...' : existing ? 'Update & Publish' : 'Publish'}
         </button>
         <button onClick={() => save(false)} disabled={saving}
-          className="px-6 py-2.5 rounded-xl border border-white/10 text-neutral-300 text-sm font-semibold hover:bg-neutral-800 disabled:opacity-50 transition-all">
+          className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 disabled:opacity-50 transition-all">
           Save as Draft
         </button>
       </div>

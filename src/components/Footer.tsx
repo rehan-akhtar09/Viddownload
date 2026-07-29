@@ -64,10 +64,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 text-center">
+        <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 flex items-center justify-center gap-4">
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
             &copy; {new Date().getFullYear()} VeloDown. All rights reserved.
           </p>
+          <Link href="/admin" className="text-xs text-neutral-500 hover:text-red-400 transition-colors">
+            Admin
+          </Link>
         </div>
       </div>
     </footer>

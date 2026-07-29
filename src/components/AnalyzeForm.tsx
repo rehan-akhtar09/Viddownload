@@ -64,7 +64,7 @@ export default function AnalyzeForm({ onAnalyzeSuccess, onAnalyzeStart, onAnalyz
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
 
       const res = await fetch('/api/analyze', {
         method: 'POST',

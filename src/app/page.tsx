@@ -26,7 +26,7 @@ export default function Home() {
   const [history, setHistory] = useLocalStorage<HistoryItem[]>('download-history', []);
 
   // Active download task states
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [activeFormat, setActiveFormat] = useState<string | undefined>();
   const [formatLabel, setFormatLabel] = useState('');
   const [taskPercent, setTaskPercent] = useState(0);
   const [taskSpeed, setTaskSpeed] = useState('');
@@ -42,7 +42,7 @@ export default function Home() {
         const res = await fetch('/api/public/blogs');
         const data = await res.json();
         setRecentBlogs(Array.isArray(data) ? data.slice(0, 3) : []);
-      } catch {}
+      } catch { }
     })();
   }, []);
 
@@ -58,7 +58,8 @@ export default function Home() {
   const handleAnalyzeStart = () => {
     setActiveMetadata(null);
     setInitialUrl('');
-    setActiveTaskId(null);
+    setTaskStatus('pending');
+    setTaskError('');
   };
 
   const handleAnalyzeSuccess = (metadata: VideoMetadata) => {
@@ -69,23 +70,20 @@ export default function Home() {
     // Error is displayed inside AnalyzeForm itself
   };
 
-  // Trigger download process
+  // Keep extraction and file delivery in one request. Serverless route handlers
+  // cannot reliably share an in-memory task registry between polling requests.
   const handleDownload = async (format: string, label: string) => {
     if (!activeMetadata) return;
 
-    // Reset task states
+    setActiveFormat(format);
     setFormatLabel(label);
-    setTaskPercent(0);
-    setTaskSpeed('0 MB/s');
-    setTaskEta('Starting...');
-    setTaskStatus('pending');
+    setTaskPercent(10);
+    setTaskSpeed('Preparing');
+    setTaskEta('This may take a minute');
+    setTaskStatus('downloading');
     setTaskError('');
-    setActiveTaskId(null);
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
       const res = await fetch('/api/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,123 +92,54 @@ export default function Home() {
           format,
           title: activeMetadata.title,
         }),
-        signal: controller.signal,
       });
-      clearTimeout(timeoutId);
-
-      const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to start download');
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error || 'The server could not download this media.');
       }
 
-      // If download completed immediately, open directly
-      if (data.status === 'completed' && data.downloadUrl) {
-        setTaskStatus('completed');
-        setTaskPercent(100);
+      setTaskPercent(95);
+      setTaskSpeed('Finalizing');
+      setTaskEta('Almost ready');
 
-        const newItem: HistoryItem = {
-          id: data.taskId || 'direct',
-          thumbnail: activeMetadata?.thumbnail || '',
-          title: activeMetadata?.title || 'Video Download',
-          format: label,
-          date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
-          url: activeMetadata?.url || '',
-        };
-        setHistory(prev => [newItem, ...prev].slice(0, 20));
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const utf8Name = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+      const fallbackName = disposition.match(/filename="([^"]+)"/i)?.[1];
+      const fileName = utf8Name ? decodeURIComponent(utf8Name) : (fallbackName || 'download.mp4');
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
 
-        window.location.href = '/api/download/file?taskId=' + encodeURIComponent(data.taskId || 'direct');
-        return;
-      }
+      setTaskStatus('completed');
+      setActiveFormat(undefined);
+      setTaskPercent(100);
+      setTaskSpeed('Complete');
+      setTaskEta('00:00');
 
-      // Track taskId
-      setActiveTaskId(data.taskId);
+      const historyId = `${Date.now()}-${format}`;
+      const newItem: HistoryItem = {
+        id: historyId,
+        thumbnail: activeMetadata.thumbnail || '',
+        title: activeMetadata.title || 'Video Download',
+        format: label,
+        date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        url: activeMetadata.url,
+      };
+      setHistory((prev) => [newItem, ...prev].slice(0, 20));
     } catch (err: unknown) {
       setTaskStatus('failed');
-      setTaskError(
-        err instanceof Error ? err.message : 'Failed to initiate download job.'
-      );
+      setActiveFormat(undefined);
+      setTaskPercent(0);
+      setTaskError(err instanceof Error ? err.message : 'Failed to download this media.');
     }
   };
-
-  // Poll active task status without overlapping requests. Any API failure is
-  // terminal for this task, preventing an endless console-error loop.
-  useEffect(() => {
-    if (
-      !activeTaskId ||
-      !['pending', 'downloading', 'merging'].includes(taskStatus)
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId: ReturnType<typeof setTimeout>;
-
-    const pollStatus = async () => {
-      try {
-        const ctrl = new AbortController();
-        const tId = setTimeout(() => ctrl.abort(), 15000);
-
-        const res = await fetch(
-          `/api/download/status?taskId=${encodeURIComponent(activeTaskId)}`,
-          { cache: 'no-store', signal: ctrl.signal }
-        );
-        clearTimeout(tId);
-        const task = await res.json();
-
-        if (!res.ok) {
-          throw new Error(task.error || 'Failed to retrieve download status.');
-        }
-        if (cancelled) return;
-
-        setTaskPercent(task.percent || 0);
-        setTaskSpeed(task.speed || '0 MB/s');
-        setTaskEta(task.eta || 'Calculating...');
-        setTaskStatus(task.status);
-        setTaskError(task.error || '');
-
-        if (task.status === 'completed') {
-          const newItem: HistoryItem = {
-            id: activeTaskId,
-            thumbnail: activeMetadata?.thumbnail || '',
-            title: activeMetadata?.title || 'YouTube Download',
-            format: formatLabel,
-            date: new Date().toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-            url: activeMetadata?.url || '',
-          };
-
-          setHistory((prev) => {
-            const filtered = prev.filter((item) => item.id !== activeTaskId);
-            return [newItem, ...filtered].slice(0, 20);
-          });
-
-          window.location.href = '/api/download/file?taskId=' + encodeURIComponent(activeTaskId);
-          return;
-        }
-
-        if (task.status !== 'failed') {
-          timeoutId = setTimeout(pollStatus, 1000);
-        }
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setTaskStatus('failed');
-        setTaskError(
-          err instanceof Error ? err.message : 'Failed to retrieve download status.'
-        );
-      }
-    };
-
-    void pollStatus();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [activeTaskId, taskStatus, activeMetadata, formatLabel, setHistory]);
 
   const handleDownloadAgain = (url: string) => {
     setInitialUrl(url);
@@ -238,7 +167,7 @@ export default function Home() {
       {/* Main Wrapper */}
       <div className="w-full max-w-4xl z-10 space-y-8 md:space-y-12">
 
-  {/* Hero Section */}
+        {/* Hero Section */}
         <section className="text-center space-y-4 pt-4 md:pt-8">
           <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-neutral-900 dark:text-white">
             Download <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-amber-500">Videos</span> from Any Site
@@ -258,7 +187,7 @@ export default function Home() {
           />
 
           {/* Active Download Progress Bar */}
-          {activeTaskId && (
+          {(taskStatus !== 'pending' || taskError) && (
             <DownloadProgress
               formatLabel={formatLabel}
               percent={taskPercent}
@@ -266,7 +195,10 @@ export default function Home() {
               eta={taskEta}
               status={taskStatus}
               error={taskError}
-              onClose={() => setActiveTaskId(null)}
+              onClose={() => {
+                setTaskStatus('pending');
+                setTaskError('');
+              }}
             />
           )}
 
@@ -275,7 +207,7 @@ export default function Home() {
             <VideoDetails
               metadata={activeMetadata}
               onDownload={handleDownload}
-              activeDownloadFormat={activeTaskId ? formatLabel : undefined}
+              activeDownloadFormat={activeFormat}
             />
           )}
         </section>

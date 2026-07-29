@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { activeTasks } from '@/lib/yt-dlp';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,12 +9,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing taskId query parameter.' }, { status: 400 });
   }
 
-  // Return completed immediately for fallback mode
+  const task = activeTasks.get(taskId);
+  if (!task) {
+    return NextResponse.json({ error: 'Download task not found.' }, { status: 404 });
+  }
+
   return NextResponse.json({
-    id: taskId,
-    percent: 100,
-    speed: '0 MB/s',
-    eta: '00:00',
-    status: 'completed',
+    id: task.id,
+    percent: task.percent,
+    speed: task.speed,
+    eta: task.eta,
+    status: task.status,
+    error: task.error,
   });
 }

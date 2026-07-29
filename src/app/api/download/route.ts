@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { activeTasks, startDownload } from '@/lib/yt-dlp';
 
 function detectPlatform(url: string): string {
   const u = url.toLowerCase();
@@ -129,32 +130,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
 
-    const platform = detectPlatform(url);
+    // Generate unique task ID
+    const taskId = 'task_' + Math.random().toString(36).substring(2, 15);
 
-    // Try yt-dlp binary for direct CDN URL
-    const ytDlpUrl = await getYtDlpDirectUrl(url, format);
-    if (ytDlpUrl) {
-      return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: ytDlpUrl, title, format });
-    }
+    // Register initial task status
+    activeTasks.set(taskId, {
+      id: taskId,
+      url,
+      format,
+      percent: 0,
+      speed: '0 MB/s',
+      eta: 'Starting...',
+      status: 'pending',
+    });
 
-    // Platform-specific fallbacks
-    if (platform === 'youtube') {
-      const streamUrl = await getYouTubeStreamUrl(url);
-      if (streamUrl) {
-        return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: streamUrl, title, format });
-      }
-    }
+    // Start background download process asynchronously
+    startDownload(taskId, url, format, title);
 
-    if (platform === 'tiktok') {
-      const streamUrl = await getTikTokStreamUrl(url);
-      if (streamUrl) {
-        return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: streamUrl, title, format });
-      }
-    }
+    // Return the task details immediately so the client can start polling
+    return NextResponse.json({
+      taskId,
+      status: 'pending',
+      percent: 0,
+    });
   } catch (err: any) {
-    console.error('Download API error:', err);
+    console.error('Download initiation error:', err);
+    return NextResponse.json({ error: 'Failed to initiate download job: ' + err.message }, { status: 500 });
   }
-
-  // Final fallback: return the original URL
-  return NextResponse.json({ taskId: 'fallback', status: 'completed', percent: 100, downloadUrl: url, title, format });
 }

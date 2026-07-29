@@ -119,7 +119,7 @@ export default function Home() {
         };
         setHistory(prev => [newItem, ...prev].slice(0, 20));
 
-        window.open(data.downloadUrl, '_blank');
+        window.location.href = '/api/download/file?taskId=' + encodeURIComponent(data.taskId || 'direct');
         return;
       }
 
@@ -188,7 +188,7 @@ export default function Home() {
             return [newItem, ...filtered].slice(0, 20);
           });
 
-          window.open(activeMetadata?.url || '', '_blank');
+          window.location.href = '/api/download/file?taskId=' + encodeURIComponent(activeTaskId);
           return;
         }
 

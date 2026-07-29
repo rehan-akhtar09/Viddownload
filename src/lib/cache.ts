@@ -1,0 +1,21 @@
+type CacheEntry<T> = { data: T; expiry: number };
+
+const store = new Map<string, CacheEntry<unknown>>();
+
+export function getCached<T>(key: string, ttlMs: number = 60000): T | null {
+  const entry = store.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    store.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+export function setCache<T>(key: string, data: T, ttlMs: number = 60000): void {
+  store.set(key, { data, expiry: Date.now() + ttlMs });
+}
+
+export function clearCache(): void {
+  store.clear();
+}

@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { VideoMetadata, HistoryItem } from '@/types';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
 import AnalyzeForm from '@/components/AnalyzeForm';
 import VideoDetails from '@/components/VideoDetails';
 import DownloadProgress from '@/components/DownloadProgress';
@@ -18,7 +17,7 @@ interface BlogPost {
   slug: string;
   excerpt: string;
   categoryName: string | null;
-  createdAt?: { toMillis?: () => number; toDate?: () => Date };
+  createdAt?: string;
 }
 
 export default function Home() {
@@ -40,18 +39,18 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       try {
-        const q = query(collection(db, 'blogs'), where('published', '==', true), orderBy('createdAt', 'desc'), limit(3));
-        const snap = await getDocs(q);
-        setRecentBlogs(snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlogPost)));
+        const res = await fetch('/api/public/blogs');
+        const data = await res.json();
+        setRecentBlogs(Array.isArray(data) ? data.slice(0, 3) : []);
       } catch {}
     })();
   }, []);
 
-  const formatDate = (ts?: { toMillis?: () => number; toDate?: () => Date }) => {
+  const formatDate = (ts?: string) => {
     if (!ts) return '';
     try {
-      const d = ts.toDate ? ts.toDate() : new Date(ts.toMillis ? ts.toMillis() : 0);
-      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const d = new Date(ts);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     } catch { return ''; }
   };
 
@@ -105,13 +104,13 @@ export default function Home() {
         throw new Error(data.error || 'Failed to start download');
       }
 
-      // If download completed immediately (fallback mode), open directly
-      if (data.status === 'completed' && data.fallbackUrl) {
+      // If download completed immediately, open directly
+      if (data.status === 'completed' && data.downloadUrl) {
         setTaskStatus('completed');
         setTaskPercent(100);
 
         const newItem: HistoryItem = {
-          id: data.taskId || 'fallback',
+          id: data.taskId || 'direct',
           thumbnail: activeMetadata?.thumbnail || '',
           title: activeMetadata?.title || 'Video Download',
           format: label,
@@ -120,7 +119,7 @@ export default function Home() {
         };
         setHistory(prev => [newItem, ...prev].slice(0, 20));
 
-        window.open(data.fallbackUrl, '_blank');
+        window.open(data.downloadUrl, '_blank');
         return;
       }
 

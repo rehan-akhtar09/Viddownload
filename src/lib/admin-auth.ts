@@ -1,14 +1,23 @@
-import { createHmac, timingSafeEqual, randomBytes } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || randomBytes(32).toString('hex');
+let _jwtSecret: string | null = null;
+
+function getJwtSecret(): string {
+  if (!_jwtSecret) {
+    _jwtSecret = process.env.JWT_SECRET || '';
+    if (!_jwtSecret) throw new Error('Missing required env var: JWT_SECRET');
+  }
+  return _jwtSecret;
+}
 
 export function verifyToken(token: string): { email: string } | null {
   try {
+    const secret = getJwtSecret();
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
     const [header, payload, sig] = parts;
-    const expectedSig = createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
+    const expectedSig = createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url');
 
     if (sig.length !== expectedSig.length) return null;
 
@@ -33,5 +42,3 @@ export function getTokenFromRequest(request: Request): string | null {
   }
   return null;
 }
-
-export { JWT_SECRET };

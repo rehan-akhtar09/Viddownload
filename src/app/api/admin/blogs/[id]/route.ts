@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
-import { doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getDoc, updateDoc, deleteDoc } from '@/lib/firestore-rest';
 import { verifyToken, getTokenFromRequest } from '@/lib/admin-auth';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const snap = await getDoc(doc(db, 'blogs', id));
-  if (!snap.exists()) {
+  const doc = await getDoc('blogs', id);
+  if (!doc) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  return NextResponse.json({ id: snap.id, ...snap.data() });
+  return NextResponse.json(doc);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await request.json();
 
-  const data: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.slug !== undefined) data.slug = body.slug;
   if (body.content !== undefined) data.content = body.content;
@@ -30,7 +29,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.categoryName !== undefined) data.categoryName = body.categoryName;
   if (body.published !== undefined) data.published = body.published;
 
-  await updateDoc(doc(db, 'blogs', id), data);
+  await updateDoc('blogs', id, data);
   return NextResponse.json({ success: true });
 }
 
@@ -41,6 +40,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   const { id } = await params;
-  await deleteDoc(doc(db, 'blogs', id));
+  await deleteDoc('blogs', id);
   return NextResponse.json({ success: true });
 }

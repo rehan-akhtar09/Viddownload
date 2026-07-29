@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { deleteDoc } from '@/lib/firestore-rest';
 import { verifyToken, getTokenFromRequest } from '@/lib/admin-auth';
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +9,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   const { id } = await params;
-  await deleteDoc(doc(db, 'categories', id));
+  await deleteDoc('categories', id);
   return NextResponse.json({ success: true });
 }

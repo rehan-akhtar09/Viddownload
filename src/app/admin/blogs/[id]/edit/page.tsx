@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import BlogEditor from '@/components/admin/BlogEditor';
 
 export default function EditBlogPage() {
@@ -14,10 +12,11 @@ export default function EditBlogPage() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const snap = await getDoc(doc(db, 'blogs', id));
-      if (snap.exists()) {
-        setBlog({ id: snap.id, ...snap.data() });
-      }
+      try {
+        const res = await fetch('/api/admin/blogs/' + id);
+        const data = await res.json();
+        if (res.ok && data.id) setBlog(data);
+      } catch {}
       setLoading(false);
     })();
   }, [id]);

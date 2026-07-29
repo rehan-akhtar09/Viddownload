@@ -8,7 +8,7 @@ import { AlertCircle, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 export default function AdminLogin() {
   const router = useRouter();
   const { login } = useAdminAuth();
-  const [email, setEmail] = useState('rehan.ibex04@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

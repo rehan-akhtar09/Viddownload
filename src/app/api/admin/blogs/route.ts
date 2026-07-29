@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getCollection, addDoc } from '@/lib/firestore-rest';
 import { verifyToken, getTokenFromRequest } from '@/lib/admin-auth';
 
 export async function GET() {
-  const snap = await getDocs(query(collection(db, 'blogs'), orderBy('createdAt', 'desc')));
-  const blogs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  return NextResponse.json(blogs);
+  try {
+    const blogs = await getCollection('blogs');
+    return NextResponse.json(blogs);
+  } catch (err: any) {
+    console.error('GET blogs error:', err);
+    return NextResponse.json({ error: 'Failed to fetch blogs' }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -15,25 +18,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = await request.json();
+  try {
+    const body = await request.json();
 
-  if (!body.title || !body.slug) {
-    return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
+    if (!body.title || !body.slug) {
+      return NextResponse.json({ error: 'Title and slug are required' }, { status: 400 });
+    }
+
+    const id = await addDoc('blogs', {
+      title: body.title,
+      slug: body.slug,
+      content: body.content || '',
+      excerpt: body.excerpt || body.title,
+      categoryId: body.categoryId || null,
+      categoryName: body.categoryName || null,
+      published: body.published ?? true,
+      author: 'admin',
+    });
+
+    return NextResponse.json({ id, success: true });
+  } catch (err: any) {
+    console.error('POST blog error:', err);
+    return NextResponse.json({ error: err.message || 'Failed to create blog' }, { status: 500 });
   }
-
-  const data = {
-    title: body.title,
-    slug: body.slug,
-    content: body.content || '',
-    excerpt: body.excerpt || body.title,
-    categoryId: body.categoryId || null,
-    categoryName: body.categoryName || null,
-    published: body.published ?? true,
-    author: 'admin',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(collection(db, 'blogs'), data);
-  return NextResponse.json({ id: docRef.id, success: true });
 }

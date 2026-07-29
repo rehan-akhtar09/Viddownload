@@ -8,5 +8,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(url, 302);
   }
 
-  return NextResponse.json({ error: 'No download URL provided.' }, { status: 400 });
+  return NextResponse.json({ error: 'No download URL provided. The download could not be completed.' }, { status: 400 });
 }

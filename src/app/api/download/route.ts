@@ -17,7 +17,6 @@ function detectPlatform(url: string): string {
 async function getDirectUrlWithYtDlp(url: string, format: string): Promise<string | null> {
   try {
     const { exec } = await import('yt-dlp-exec');
-
     const formatMap: Record<string, string> = {
       'highest': 'best',
       '1080p': 'bestvideo[height<=1080]+bestaudio/best',
@@ -25,9 +24,7 @@ async function getDirectUrlWithYtDlp(url: string, format: string): Promise<strin
       '480p': 'bestvideo[height<=480]+bestaudio/best',
       '360p': 'bestvideo[height<=360]+bestaudio/best',
     };
-
     const formatArg = formatMap[format] || 'best';
-
     const res = await exec(url, {
       getUrl: true,
       format: formatArg,
@@ -35,7 +32,6 @@ async function getDirectUrlWithYtDlp(url: string, format: string): Promise<strin
       socketTimeout: 15,
       noWarnings: true,
     });
-
     const downloadUrl = res.stdout?.trim();
     if (downloadUrl && downloadUrl.startsWith('http')) {
       return downloadUrl;
@@ -48,12 +44,10 @@ async function getDirectUrlWithYtDlp(url: string, format: string): Promise<strin
 
 async function getDirectUrlFromPage(url: string): Promise<string | null> {
   const platform = detectPlatform(url);
-
   if (platform === 'youtube') {
     try {
       const htmlRes = await fetch(url, { signal: AbortSignal.timeout(5000) });
       const html = await htmlRes.text();
-
       const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
       if (playerResponseMatch) {
         const playerResponse = JSON.parse(playerResponseMatch[1]);
@@ -67,65 +61,36 @@ async function getDirectUrlFromPage(url: string): Promise<string | null> {
       }
     } catch {}
   }
-
   return null;
 }
 
 export async function POST(request: Request) {
+  let url = '';
+  let format = 'highest';
+  let title = 'video';
+
   try {
     const body = await request.json();
-    const url = body.url as string | undefined;
-    const format = (body.format as string) || 'highest';
-    const title = (body.title as string) || 'video';
+    url = (body.url as string) || '';
+    format = (body.format as string) || 'highest';
+    title = (body.title as string) || 'video';
 
     if (!url) {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
 
-    // Try yt-dlp first for direct download URL
     const ytDlpUrl = await getDirectUrlWithYtDlp(url, format);
     if (ytDlpUrl) {
-      return NextResponse.json({
-        taskId: 'direct',
-        status: 'completed',
-        percent: 100,
-        downloadUrl: ytDlpUrl,
-        title,
-        format,
-      });
+      return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: ytDlpUrl, title, format });
     }
 
-    // Fallback: try to extract from page HTML
     const pageUrl = await getDirectUrlFromPage(url);
     if (pageUrl) {
-      return NextResponse.json({
-        taskId: 'direct',
-        status: 'completed',
-        percent: 100,
-        downloadUrl: pageUrl,
-        title,
-        format,
-      });
+      return NextResponse.json({ taskId: 'direct', status: 'completed', percent: 100, downloadUrl: pageUrl, title, format });
     }
-
-    // Final fallback: open the source URL
-    return NextResponse.json({
-      taskId: 'fallback',
-      status: 'completed',
-      percent: 100,
-      downloadUrl: url,
-      title,
-      format,
-    });
   } catch (err: any) {
     console.error('Download API error:', err);
-    return NextResponse.json({
-      taskId: 'fallback',
-      status: 'completed',
-      percent: 100,
-      downloadUrl: '',
-      title: 'video',
-      format: 'highest',
-    });
   }
+
+  return NextResponse.json({ taskId: 'fallback', status: 'completed', percent: 100, downloadUrl: url, title, format });
 }

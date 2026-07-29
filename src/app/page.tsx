@@ -188,7 +188,7 @@ export default function Home() {
             return [newItem, ...filtered].slice(0, 20);
           });
 
-          window.location.href = `/api/download/file?taskId=${encodeURIComponent(activeTaskId)}`;
+          window.open(activeMetadata?.url || '', '_blank');
           return;
         }
 

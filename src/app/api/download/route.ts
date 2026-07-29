@@ -11,47 +11,34 @@ function detectPlatform(url: string): string {
   if (u.includes('dailymotion.com') || u.includes('dai.ly')) return 'dailymotion';
   if (u.includes('twitch.tv')) return 'twitch';
   if (u.includes('reddit.com') || u.includes('redd.it')) return 'reddit';
-  if (u.includes('linkedin.com')) return 'linkedin';
-  if (u.includes('pinterest.com') || u.includes('pin.it')) return 'pinterest';
-  if (u.includes('tumblr.com')) return 'tumblr';
   return 'unknown';
 }
 
-async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+async function getDirectUrlWithYtDlp(url: string, format: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
-}
+    const { exec } = await import('yt-dlp-exec');
 
-async function getYouTubeDirectUrl(url: string): Promise<string | null> {
-  try {
-    const htmlRes = await fetchWithTimeout(url, 5000);
-    const html = await htmlRes.text();
-    const fmtStreamMapMatch = html.match(/url_encoded_fmt_stream_map["']?\s*:\s*["']([^"']+)/);
-    if (fmtStreamMapMatch) {
-      const streams = decodeURIComponent(fmtStreamMapMatch[1]).split(',');
-      for (const stream of streams) {
-        const params = new URLSearchParams(stream);
-        const streamUrl = params.get('url');
-        if (streamUrl) return streamUrl;
-      }
-    }
-    const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-    if (playerResponseMatch) {
-      const playerResponse = JSON.parse(playerResponseMatch[1]);
-      const formats = playerResponse.streamingData?.formats || [];
-      const adaptiveFormats = playerResponse.streamingData?.adaptiveFormats || [];
-      const allFormats = [...formats, ...adaptiveFormats];
-      if (allFormats.length > 0) {
-        const sorted = allFormats.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
-        const best = sorted.find((f: any) => f.url) || allFormats.find((f: any) => f.url);
-        if (best?.url) return best.url;
-      }
+    const formatMap: Record<string, string> = {
+      'highest': 'best',
+      '1080p': 'bestvideo[height<=1080]+bestaudio/best',
+      '720p': 'bestvideo[height<=720]+bestaudio/best',
+      '480p': 'bestvideo[height<=480]+bestaudio/best',
+      '360p': 'bestvideo[height<=360]+bestaudio/best',
+    };
+
+    const formatArg = formatMap[format] || 'best';
+
+    const res = await exec(url, {
+      getUrl: true,
+      format: formatArg,
+      noPlaylist: true,
+      socketTimeout: 15,
+      noWarnings: true,
+    });
+
+    const downloadUrl = res.stdout?.trim();
+    if (downloadUrl && downloadUrl.startsWith('http')) {
+      return downloadUrl;
     }
     return null;
   } catch {
@@ -59,14 +46,29 @@ async function getYouTubeDirectUrl(url: string): Promise<string | null> {
   }
 }
 
-async function getTikTokDirectUrl(url: string): Promise<string | null> {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-    const data = await oembedRes.json();
-    return data.thumbnail_url || null;
-  } catch {
-    return null;
+async function getDirectUrlFromPage(url: string): Promise<string | null> {
+  const platform = detectPlatform(url);
+
+  if (platform === 'youtube') {
+    try {
+      const htmlRes = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const html = await htmlRes.text();
+
+      const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+      if (playerResponseMatch) {
+        const playerResponse = JSON.parse(playerResponseMatch[1]);
+        const formats = playerResponse.streamingData?.formats || [];
+        const adaptiveFormats = playerResponse.streamingData?.adaptiveFormats || [];
+        const allFormats = [...formats, ...adaptiveFormats].filter((f: any) => f.url);
+        if (allFormats.length > 0) {
+          const sorted = allFormats.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
+          return sorted[0].url;
+        }
+      }
+    } catch {}
   }
+
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -80,20 +82,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
 
-    const platform = detectPlatform(url);
-    let downloadUrl: string | null = null;
-
-    if (platform === 'youtube') {
-      downloadUrl = await getYouTubeDirectUrl(url);
-    } else if (platform === 'tiktok') {
-      downloadUrl = await getTikTokDirectUrl(url);
+    // Try yt-dlp first for direct download URL
+    const ytDlpUrl = await getDirectUrlWithYtDlp(url, format);
+    if (ytDlpUrl) {
+      return NextResponse.json({
+        taskId: 'direct',
+        status: 'completed',
+        percent: 100,
+        downloadUrl: ytDlpUrl,
+        title,
+        format,
+      });
     }
 
+    // Fallback: try to extract from page HTML
+    const pageUrl = await getDirectUrlFromPage(url);
+    if (pageUrl) {
+      return NextResponse.json({
+        taskId: 'direct',
+        status: 'completed',
+        percent: 100,
+        downloadUrl: pageUrl,
+        title,
+        format,
+      });
+    }
+
+    // Final fallback: open the source URL
     return NextResponse.json({
-      taskId: 'direct',
+      taskId: 'fallback',
       status: 'completed',
       percent: 100,
-      downloadUrl: downloadUrl || url,
+      downloadUrl: url,
       title,
       format,
     });

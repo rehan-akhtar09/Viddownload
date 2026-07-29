@@ -36,9 +36,6 @@ function detectPlatform(url: string): string {
   if (u.includes('dailymotion.com') || u.includes('dai.ly')) return 'dailymotion';
   if (u.includes('twitch.tv')) return 'twitch';
   if (u.includes('reddit.com') || u.includes('redd.it')) return 'reddit';
-  if (u.includes('linkedin.com')) return 'linkedin';
-  if (u.includes('pinterest.com') || u.includes('pin.it')) return 'pinterest';
-  if (u.includes('tumblr.com')) return 'tumblr';
   return 'unknown';
 }
 
@@ -53,195 +50,67 @@ async function fetchWithTimeout(url: string, timeoutMs = 5000): Promise<Response
   }
 }
 
-async function extractYouTube(url: string) {
+async function analyzeWithYtDlp(url: string) {
   try {
-    const oembedRes = await fetchWithTimeout(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-    if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
+    const ytDlpExec = (await import('yt-dlp-exec')).exec;
+    const res = await ytDlpExec(url, {
+      dumpJson: true,
+      noPlaylist: true,
+      socketTimeout: 10,
+      noWarnings: true,
+    });
+    const data = JSON.parse(res.stdout);
 
-    const videoId = url.match(/(?:v=|youtu\.be\/|v\/|embed\/)([a-zA-Z0-9_-]{11})/)?.[1] || '';
-    let duration = '00:00';
-    let viewCount = '0';
-    let uploadDate = 'Unknown';
+    return {
+      title: data.title || 'Unknown Video',
+      channel: data.uploader || data.channel || 'Unknown',
+      duration: formatDuration(data.duration || 0),
+      uploadDate: data.upload_date ? formatDate(data.upload_date) : 'Unknown',
+      viewCount: formatViews(data.view_count || 0),
+      thumbnail: data.thumbnail || '',
+      url: url,
+      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest': true },
+      isShort: data.duration > 0 && data.duration <= 60 && data.width > 0 && data.height > data.width,
+    };
+  } catch {
+    return null;
+  }
+}
 
-    if (videoId) {
-      try {
-        const htmlRes = await fetchWithTimeout(`https://www.youtube.com/watch?v=${videoId}`, 3000);
-        const html = await htmlRes.text();
-        const durationMatch = html.match(/"approxDurationMs":"(\d+)"/);
-        if (durationMatch) duration = formatDuration(Math.floor(parseInt(durationMatch[1]) / 1000));
-        const viewMatch = html.match(/"viewCount":"(\d+)"/);
-        if (viewMatch) viewCount = formatViews(parseInt(viewMatch[1]));
-        const dateMatch = html.match(/"uploadDate":"([^"]+)"/);
-        if (dateMatch) uploadDate = formatDate(dateMatch[1]);
-      } catch {}
+async function analyzeWithOembed(url: string, platform: string) {
+  try {
+    let oembedUrl = '';
+    if (platform === 'youtube') {
+      oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    } else if (platform === 'tiktok') {
+      oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    } else if (platform === 'instagram') {
+      oembedUrl = `https://www.instagram.com/oembed?url=${encodeURIComponent(url)}`;
+    } else if (platform === 'facebook') {
+      oembedUrl = `https://graph.facebook.com/v19.0/oembed_video?url=${encodeURIComponent(url)}&format=json`;
+    } else if (platform === 'vimeo') {
+      oembedUrl = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`;
+    } else if (platform === 'twitter') {
+      oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`;
+    } else {
+      oembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(url)}`;
     }
 
-    return {
-      title: data.title || 'YouTube Video',
-      channel: data.author_name || 'Unknown',
-      duration,
-      uploadDate,
-      viewCount,
-      thumbnail: data.thumbnail_url || (videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : ''),
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: false,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractTikTok(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+    const oembedRes = await fetchWithTimeout(oembedUrl);
     if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
-
-    let duration = '00:00';
-    if (data.duration) duration = formatDuration(data.duration);
-
-    return {
-      title: data.title || (data.author_name ? `TikTok by ${data.author_name}` : 'TikTok Video'),
-      channel: data.author_name || 'Unknown',
-      duration,
-      uploadDate: data.upload_date || formatDate(data.upload_date || ''),
-      viewCount: '0',
-      thumbnail: data.thumbnail_url || data.thumbnail || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: true,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractInstagram(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://www.instagram.com/oembed?url=${encodeURIComponent(url)}`);
-    if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
-
-    return {
-      title: data.title || 'Instagram Video',
-      channel: data.author_name || 'Unknown',
-      duration: '00:00',
-      uploadDate: 'Unknown',
-      viewCount: '0',
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: true,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractFacebook(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://graph.facebook.com/v19.0/oembed_video?url=${encodeURIComponent(url)}&format=json`);
-    if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
-    return {
-      title: data.title || 'Facebook Video',
-      channel: data.author_name || 'Unknown',
-      duration: '00:00',
-      uploadDate: 'Unknown',
-      viewCount: '0',
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: false,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractVimeo(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
-    if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
-    return {
-      title: data.title || 'Vimeo Video',
-      channel: data.author_name || 'Unknown',
-      duration: formatDuration(data.duration || 0),
-      uploadDate: formatDate(data.upload_date || ''),
-      viewCount: formatViews(data.view_count || 0),
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: false,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractTwitter(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`);
-    if (!oembedRes.ok) throw new Error('oembed failed');
-    const data = await oembedRes.json();
-    return {
-      title: data.title || data.author_name || 'X/Twitter Video',
-      channel: data.author_name || 'Unknown',
-      duration: '00:00',
-      uploadDate: 'Unknown',
-      viewCount: '0',
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: true,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractDailymotion(url: string) {
-  try {
-    const videoId = url.match(/(?:video|dai\.ly)\/([a-zA-Z0-9]+)/)?.[1];
-    if (!videoId) throw new Error('no id');
-    const apiRes = await fetchWithTimeout(`https://api.dailymotion.com/video/${videoId}?fields=title,owner.screenname,duration,views_total,thumbnail_url,created_time`);
-    if (!apiRes.ok) throw new Error('api failed');
-    const data = await apiRes.json();
-    return {
-      title: data.title || 'Dailymotion Video',
-      channel: data.owner?.screenname || 'Unknown',
-      duration: formatDuration(data.duration || 0),
-      uploadDate: data.created_time ? formatDate(new Date(data.created_time * 1000).toISOString()) : 'Unknown',
-      viewCount: formatViews(data.views_total || 0),
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: false,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function extractNoembed(url: string) {
-  try {
-    const oembedRes = await fetchWithTimeout(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
-    if (!oembedRes.ok) throw new Error('noembed failed');
     const data = await oembedRes.json();
     if (data.error) throw new Error(data.error);
+
     return {
       title: data.title || 'Video',
       channel: data.author_name || 'Unknown',
       duration: '00:00',
       uploadDate: 'Unknown',
       viewCount: '0',
-      thumbnail: data.thumbnail_url || '',
-      url,
-      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-      isShort: false,
+      thumbnail: data.thumbnail_url || data.thumbnail || '',
+      url: url,
+      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest': true },
+      isShort: platform === 'tiktok' || platform === 'instagram' || platform === 'twitter',
     };
   } catch {
     return null;
@@ -267,33 +136,26 @@ export async function POST(request: Request) {
     const cleanUrl = url.trim();
     const platform = detectPlatform(cleanUrl);
 
-    let result = null;
+    // Try yt-dlp first for full metadata
+    const ytDlpResult = await analyzeWithYtDlp(cleanUrl);
+    if (ytDlpResult) return NextResponse.json(ytDlpResult);
 
-    if (platform === 'youtube') result = await extractYouTube(cleanUrl);
-    else if (platform === 'tiktok') result = await extractTikTok(cleanUrl);
-    else if (platform === 'instagram') result = await extractInstagram(cleanUrl);
-    else if (platform === 'facebook') result = await extractFacebook(cleanUrl);
-    else if (platform === 'vimeo') result = await extractVimeo(cleanUrl);
-    else if (platform === 'twitter') result = await extractTwitter(cleanUrl);
-    else if (platform === 'dailymotion') result = await extractDailymotion(cleanUrl);
+    // Fallback to oembed APIs
+    const oembedResult = await analyzeWithOembed(cleanUrl, platform);
+    if (oembedResult) return NextResponse.json(oembedResult);
 
-    if (!result) result = await extractNoembed(cleanUrl);
-
-    if (!result) {
-      return NextResponse.json({
-        title: cleanUrl,
-        channel: 'Unknown',
-        duration: '00:00',
-        uploadDate: 'Unknown',
-        viewCount: '0',
-        thumbnail: '',
-        url: cleanUrl,
-        availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest' : true },
-        isShort: false,
-      });
-    }
-
-    return NextResponse.json(result);
+    // Last resort: return basic info
+    return NextResponse.json({
+      title: cleanUrl,
+      channel: 'Unknown',
+      duration: '00:00',
+      uploadDate: 'Unknown',
+      viewCount: '0',
+      thumbnail: '',
+      url: cleanUrl,
+      availableQualities: { '360p': true, '480p': true, '720p': true, '1080p': true, 'highest': true },
+      isShort: false,
+    });
   } catch (err: any) {
     console.error('Analyze API error:', err);
     return NextResponse.json({ error: 'Failed to analyze video. Please check the URL and try again.' }, { status: 500 });

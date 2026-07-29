@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs, getDocsFromCache } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
-import { Calendar, Clock, FileText } from 'lucide-react';
-import { use } from 'react';
+import { Calendar, FileText } from 'lucide-react';
 
 interface BlogPost {
   id: string;

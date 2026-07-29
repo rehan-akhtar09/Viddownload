@@ -3,10 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { VideoMetadata, HistoryItem } from '@/types';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import AnalyzeForm from '@/components/AnalyzeForm';
 import VideoDetails from '@/components/VideoDetails';
 import DownloadProgress from '@/components/DownloadProgress';
 import HistoryList from '@/components/HistoryList';
+import Link from 'next/link';
+import { Calendar, ArrowRight, FileText } from 'lucide-react';
+
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  categoryName: string | null;
+  createdAt?: { toMillis?: () => number; toDate?: () => Date };
+}
 
 export default function Home() {
   const [activeMetadata, setActiveMetadata] = useState<VideoMetadata | null>(null);
@@ -21,6 +34,26 @@ export default function Home() {
   const [taskEta, setTaskEta] = useState('');
   const [taskStatus, setTaskStatus] = useState<'pending' | 'downloading' | 'merging' | 'completed' | 'failed'>('pending');
   const [taskError, setTaskError] = useState<string>('');
+
+  const [recentBlogs, setRecentBlogs] = useState<BlogPost[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const q = query(collection(db, 'blogs'), where('published', '==', true), orderBy('createdAt', 'desc'), limit(3));
+        const snap = await getDocs(q);
+        setRecentBlogs(snap.docs.map((d) => ({ id: d.id, ...d.data() } as BlogPost)));
+      } catch {}
+    })();
+  }, []);
+
+  const formatDate = (ts?: { toMillis?: () => number; toDate?: () => Date }) => {
+    if (!ts) return '';
+    try {
+      const d = ts.toDate ? ts.toDate() : new Date(ts.toMillis ? ts.toMillis() : 0);
+      return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } catch { return ''; }
+  };
 
   // Handle analysis events
   const handleAnalyzeStart = () => {
@@ -239,7 +272,49 @@ export default function Home() {
           />
         </section>
 
-
+        {/* Latest Blog Posts */}
+        {recentBlogs.length > 0 && (
+          <section className="border-t border-black/10 dark:border-white/10 pt-8 md:pt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-xl bg-red-600/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-red-600" />
+                </div>
+                <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Latest from Blog</h2>
+              </div>
+              <Link href="/blog" className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400 hover:underline font-medium">
+                View all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid gap-4">
+              {recentBlogs.map((post) => (
+                <Link
+                  key={post.id}
+                  href={'/blog/' + post.slug}
+                  className="block p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10 hover:border-red-500/30 transition-all group"
+                >
+                  <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-1.5">
+                    {post.categoryName && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-red-600/10 text-red-600 dark:text-red-400 font-medium">
+                        {post.categoryName}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(post.createdAt)}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-1">
+                    {post.excerpt}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

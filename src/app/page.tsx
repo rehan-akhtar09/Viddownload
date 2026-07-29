@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { VideoMetadata, HistoryItem } from '@/types';
-import ThemeToggle from '@/components/ThemeToggle';
 import AnalyzeForm from '@/components/AnalyzeForm';
 import VideoDetails from '@/components/VideoDetails';
 import DownloadProgress from '@/components/DownloadProgress';
 import HistoryList from '@/components/HistoryList';
-import { Play } from 'lucide-react';
 
 export default function Home() {
   const [activeMetadata, setActiveMetadata] = useState<VideoMetadata | null>(null);
@@ -28,6 +26,7 @@ export default function Home() {
   const handleAnalyzeStart = () => {
     setActiveMetadata(null);
     setInitialUrl('');
+    setActiveTaskId(null);
   };
 
   const handleAnalyzeSuccess = (metadata: VideoMetadata) => {
@@ -179,7 +178,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-x-hidden selection:bg-red-500/30 selection:text-red-200 transition-colors duration-300">
+    <div className="bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-x-hidden selection:bg-red-500/30 selection:text-red-200 transition-colors duration-300">
 
       {/* Premium Background Blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] aspect-square rounded-full bg-red-500/5 dark:bg-red-600/10 blur-[120px] pointer-events-none" />
@@ -188,26 +187,13 @@ export default function Home() {
       {/* Main Wrapper */}
       <div className="w-full max-w-4xl z-10 space-y-8 md:space-y-12">
 
-        {/* Navigation / Header */}
-        <header className="flex items-center justify-between py-2 border-b border-black/10 dark:border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">
-              <Play className="h-5 w-5 fill-white text-white translate-x-[1px]" />
-            </div>
-            <span className="font-extrabold text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-black to-neutral-600 dark:from-white dark:to-neutral-400">
-              VeloDown
-            </span>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        {/* Hero Section */}
+  {/* Hero Section */}
         <section className="text-center space-y-4 pt-4 md:pt-8">
           <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none text-neutral-900 dark:text-white">
-            Download <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-amber-500">YouTube Videos</span> & Shorts
+            Download <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-amber-500">Videos</span> from Any Site
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 max-w-lg mx-auto text-sm md:text-base font-medium">
-            Fast, premium, and zero ads. Convert YouTube videos to MP4 and high-bitrate MP3 instantly.
+            Fast, premium, and zero ads. Download videos from YouTube, TikTok, Instagram, Twitter, Facebook, and more.
           </p>
         </section>
 
@@ -253,12 +239,9 @@ export default function Home() {
           />
         </section>
 
-        {/* Footer */}
-        <footer className="text-center text-xs text-neutral-500 dark:text-neutral-600 pt-8 pb-4">
-          <p>© {new Date().getFullYear()} VeloDown. For personal use only.</p>
-        </footer>
+
 
       </div>
-    </main>
+    </div>
   );
 }

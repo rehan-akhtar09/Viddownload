@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from './providers';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import './globals.css';
 
 const geistSans = Geist({
@@ -14,13 +16,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VeloDown - Modern YouTube Video & Audio Downloader',
-  description: 'Download YouTube videos, Shorts, and audio streams in high quality (MP4/MP3) instantly. Premium glassmorphism design, fast, and zero ads.',
-  keywords: ['youtube downloader', 'youtube to mp3', 'youtube to mp4', 'download shorts', 'youtube video downloader', 'shorts downloader'],
+  title: 'VeloDown - Universal Video Downloader',
+  description: 'Download videos from YouTube, TikTok, Instagram, Twitter, Facebook, and more in high quality (MP4/MP3) instantly.',
+  keywords: ['video downloader', 'youtube to mp3', 'tiktok downloader', 'instagram video downloader', 'twitter video downloader'],
   authors: [{ name: 'VeloDown Team' }],
   openGraph: {
-    title: 'VeloDown - Modern YouTube Video & Audio Downloader',
-    description: 'Download YouTube videos and audios in high quality instantly with zero ads.',
+    title: 'VeloDown - Universal Video Downloader',
+    description: 'Download videos from any site in high quality instantly with zero ads.',
     type: 'website',
   },
 };
@@ -38,7 +40,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-100 transition-colors duration-300">
         <ThemeProvider>
-          {children}
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

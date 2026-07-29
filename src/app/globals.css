@@ -50,10 +50,6 @@ body {
    Translates dark-themed components to elegant light mode variants
    ========================================== */
 
-html:not(.dark) main {
-  background-color: #f1f5f9 !important;
-}
-
 html:not(.dark) .backdrop-blur-md {
   background-color: rgba(255, 255, 255, 0.4) !important;
   border-color: rgba(15, 23, 42, 0.08) !important;

@@ -57,30 +57,29 @@ export const activeTasks =
   (globalTaskStore.__veloDownActiveTasks = new Map<string, DownloadTask>());
 
 // =============================================================================
-// Caching — invalidate after 30 minutes
+// Caching — invalidate after 30 minutes (keyed by URL to support any site)
 // =============================================================================
 
 const cacheStore = new Map<string, { data: VideoBasicInfo; expiry: number }>();
 
-function getCached(id: string): VideoBasicInfo | null {
-  const entry = cacheStore.get(id);
+function getCached(key: string): VideoBasicInfo | null {
+  const entry = cacheStore.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiry) {
-    cacheStore.delete(id);
+    cacheStore.delete(key);
     return null;
   }
   return entry.data;
 }
 
-function setCache(id: string, data: VideoBasicInfo): void {
-  cacheStore.set(id, { data, expiry: Date.now() + 30 * 60 * 1000 });
+function setCache(key: string, data: VideoBasicInfo): void {
+  cacheStore.set(key, { data, expiry: Date.now() + 30 * 60 * 1000 });
 }
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-// Resolve ffmpeg path (Turbopack may virtualise ffmpeg-static's import)
 const getFfmpegLocation = (): string => {
   const candidates = [
     ffmpegPath,
@@ -98,104 +97,27 @@ function sanitizeFilename(name: string): string {
 }
 
 // =============================================================================
-// URL parsing — uses the URL API (no fragile regex)
+// URL validation — accepts any valid http/https URL (yt-dlp handles parsing)
 // =============================================================================
 
-const ALLOWED_HOSTS = new Set([
-  'youtube.com',
-  'www.youtube.com',
-  'm.youtube.com',
-  'music.youtube.com',
-  'youtu.be',
-  'www.youtu.be',
-]);
-
-const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
-
-export interface ParseResult {
-  videoId: string;
-  isShort: boolean;
-  cleanUrl: string;
-}
-
-export function parseYoutubeUrl(input: string): ParseResult {
+export function validateUrl(input: string): string {
   if (!input || typeof input !== 'string') {
-    throw new Error('Invalid YouTube URL');
+    throw new Error('Invalid URL');
   }
-
+  const trimmed = input.trim();
   let parsed: URL;
   try {
-    parsed = new URL(input.trim());
+    parsed = new URL(trimmed);
   } catch {
-    throw new Error('Invalid YouTube URL');
+    throw new Error('Invalid URL');
   }
-
-  // Validate hostname
-  const host = parsed.hostname.toLowerCase();
-  const isShortDomain = host === 'youtu.be' || host === 'www.youtu.be';
-  if (!ALLOWED_HOSTS.has(host)) {
-    throw new Error('Invalid YouTube URL');
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Only http and https URLs are supported');
   }
-
-  let videoId: string | null = null;
-  let isShort = false;
-
-  if (isShortDomain) {
-    // youtu.be/VIDEO_ID
-    videoId = parsed.pathname.slice(1).split('/')[0] || null;
-  } else {
-    const path = parsed.pathname;
-
-    // /shorts/VIDEO_ID
-    const shortsMatch = path.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
-    if (shortsMatch) {
-      videoId = shortsMatch[1];
-      isShort = true;
-    }
-
-    // /embed/VIDEO_ID
-    if (!videoId) {
-      const embedMatch = path.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
-      if (embedMatch) videoId = embedMatch[1];
-    }
-
-    // /live/VIDEO_ID
-    if (!videoId) {
-      const liveMatch = path.match(/\/live\/([a-zA-Z0-9_-]{11})/);
-      if (liveMatch) videoId = liveMatch[1];
-    }
-
-    // /v/VIDEO_ID
-    if (!videoId) {
-      const vMatch = path.match(/\/v\/([a-zA-Z0-9_-]{11})/);
-      if (vMatch) videoId = vMatch[1];
-    }
-
-    // ?v=VIDEO_ID (query param)
-    if (!videoId) {
-      const vParam = parsed.searchParams.get('v');
-      if (vParam) videoId = vParam;
-    }
+  if (!parsed.hostname.includes('.')) {
+    throw new Error('Invalid URL');
   }
-
-  if (!videoId || !VIDEO_ID_RE.test(videoId)) {
-    throw new Error('Invalid YouTube URL');
-  }
-
-  const cleanUrl = isShort
-    ? `https://www.youtube.com/shorts/${videoId}`
-    : `https://www.youtube.com/watch?v=${videoId}`;
-
-  return { videoId, isShort, cleanUrl };
-}
-
-// Legacy alias kept for the download route
-export function cleanUrl(url: string): string {
-  try {
-    return parseYoutubeUrl(url).cleanUrl;
-  } catch {
-    return url;
-  }
+  return trimmed;
 }
 
 // =============================================================================
@@ -214,18 +136,13 @@ function buildYtDlpArgs(...extra: string[]): string[] {
 }
 
 /**
- * Fetch ONLY basic video metadata via --print (fast, no format info).
- * Results are cached for 30 minutes.
+ * Fetch basic video metadata via --print (fast, no format details).
+ * Results are cached for 30 minutes by URL.
  */
 export async function getVideoBasicInfo(url: string): Promise<VideoBasicInfo> {
-  // Check cache first
-  let parsed: ParseResult;
-  try {
-    parsed = parseYoutubeUrl(url);
-  } catch {
-    throw new Error('Invalid YouTube URL');
-  }
-  const cached = getCached(parsed.videoId);
+  const validUrl = validateUrl(url);
+
+  const cached = getCached(validUrl);
   if (cached) return cached;
 
   const fields = [
@@ -234,7 +151,7 @@ export async function getVideoBasicInfo(url: string): Promise<VideoBasicInfo> {
   ];
 
   const data = await new Promise<string[]>((resolve, reject) => {
-    const args = buildYtDlpArgs(...fields.map((f) => ['--print', f]).flat(), url);
+    const args = buildYtDlpArgs(...fields.map((f) => ['--print', f]).flat(), validUrl);
     const child = spawn('python', args);
 
     let stdout = '';
@@ -242,7 +159,7 @@ export async function getVideoBasicInfo(url: string): Promise<VideoBasicInfo> {
 
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error('Request timed out. YouTube is not responding.'));
+      reject(new Error('Request timed out. The server took too long to respond.'));
     }, 30000);
 
     child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
@@ -275,13 +192,13 @@ export async function getVideoBasicInfo(url: string): Promise<VideoBasicInfo> {
     height: parseInt(data[7], 10) || 0,
   };
 
-  setCache(parsed.videoId, info);
+  setCache(validUrl, info);
   return info;
 }
 
 /**
- * Full metadata fetch via --dump-json (used only during download where
- * format details are needed).  This is slower so we keep caching tight.
+ * Full metadata fetch via --dump-json (used during download where
+ * format details are needed). Slower so caching is minimal.
  */
 export async function getVideoMetadata(url: string): Promise<YtDlpMetadata> {
   return new Promise((resolve, reject) => {
@@ -293,7 +210,7 @@ export async function getVideoMetadata(url: string): Promise<YtDlpMetadata> {
 
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error('Request timed out. YouTube is not responding. Please try again later.'));
+      reject(new Error('Request timed out. The server took too long to respond.'));
     }, 120000);
 
     child.stdout.on('data', (data) => { stdoutData += data.toString(); });
@@ -308,7 +225,7 @@ export async function getVideoMetadata(url: string): Promise<YtDlpMetadata> {
       try {
         resolve(JSON.parse(stdoutData) as YtDlpMetadata);
       } catch {
-        reject(new Error('Failed to parse video metadata from YouTube.'));
+        reject(new Error('Failed to parse video metadata.'));
       }
     });
 
@@ -325,13 +242,22 @@ function parseYtDlpError(stderr: string): string {
     return 'This video is private and cannot be downloaded.';
   }
   if (stderr.includes('Sign in to confirm you are not a bot')) {
-    return 'YouTube blocked the request. Bot verification is required.';
+    return 'The site blocked the request. Bot verification is required.';
   }
   if (stderr.includes('Video unavailable') || stderr.includes('This video is unavailable')) {
     return 'This video is unavailable or has been deleted.';
   }
-  if (stderr.includes('age') || stderr.includes('Age')) {
+  if (stderr.includes('HTTP Error 403')) {
+    return 'Access forbidden. The video may be region-restricted.';
+  }
+  if (stderr.includes('HTTP Error 404')) {
+    return 'Video not found. The URL may be invalid.';
+  }
+  if (stderr.includes('age') || stderr.includes('Age') || stderr.includes('age-restricted')) {
     return 'This video is age-restricted and cannot be accessed.';
+  }
+  if (stderr.includes('Unsupported URL') || stderr.includes('not a valid URL')) {
+    return 'Unsupported URL. Please check the link and try again.';
   }
   const errorLines = stderr.split('\n').filter((l) => l.trim().startsWith('ERROR:'));
   if (errorLines.length > 0) {
@@ -340,9 +266,10 @@ function parseYtDlpError(stderr: string): string {
   return 'Failed to fetch video information.';
 }
 
-/**
- * Start the download process in the background
- */
+// =============================================================================
+// Download engine
+// =============================================================================
+
 export function startDownload(taskId: string, url: string, format: string, videoTitle: string) {
   const task = activeTasks.get(taskId);
   if (!task) return;
@@ -353,16 +280,12 @@ export function startDownload(taskId: string, url: string, format: string, video
   const ffmpegDir = getFfmpegLocation();
   const tempDir = path.join(process.cwd(), '.temp', taskId);
 
-  // Ensure temp directory exists
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
 
-  // Construct yt-dlp arguments based on format selection
   const args: string[] = ['-m', 'yt_dlp', '--no-playlist', '--socket-timeout', '15', '--extractor-retries', '1'];
 
-  // Save files as temp_file.%(ext)s inside our specific taskId directory.
-  // The final extension is determined by yt-dlp after post-processing.
   const outputTemplate = path.join(tempDir, 'temp_file.%(ext)s');
   args.push('-o', outputTemplate);
 
@@ -373,42 +296,35 @@ export function startDownload(taskId: string, url: string, format: string, video
   const isAudio = format.startsWith('audio-');
 
   if (isAudio) {
-    // Audio extraction format
-    const quality = format.split('-')[1]; // e.g. 128k, 192k, 320k
+    const quality = format.split('-')[1];
     args.push(
       '-x',
       '--audio-format', 'mp3',
       '--audio-quality', quality === 'highest' ? '0' : quality.replace('kbps', '')
     );
   } else {
-    // Prefer MP4-compatible streams, but keep the fallback for videos where
-    // YouTube does not expose an AVC/AAC combination at the requested height.
-    let formatQuery = 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[ext=mp4]/bestvideo+bestaudio/best';
+    // Generic format query — works for YouTube, TikTok, Instagram, Twitter/X, etc.
+    // Falls back gracefully when a specific height isn't available.
+    let formatQuery = 'bestvideo+bestaudio/best';
     if (format === 'video-1080p') {
-      formatQuery = 'bestvideo[height<=1080][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=1080][ext=mp4]/bestvideo[height<=1080]+bestaudio/best[height<=1080]/best';
+      formatQuery = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best';
     } else if (format === 'video-720p') {
-      formatQuery = 'bestvideo[height<=720][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=720][ext=mp4]/bestvideo[height<=720]+bestaudio/best[height<=720]/best';
+      formatQuery = 'bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best';
     } else if (format === 'video-480p') {
-      formatQuery = 'bestvideo[height<=480][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=480][ext=mp4]/bestvideo[height<=480]+bestaudio/best[height<=480]/best';
+      formatQuery = 'bestvideo[height<=480]+bestaudio/best[height<=480]/bestvideo+bestaudio/best';
     } else if (format === 'video-360p') {
-      formatQuery = 'bestvideo[height<=360][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=360][ext=mp4]/bestvideo[height<=360]+bestaudio/best[height<=360]/best';
+      formatQuery = 'bestvideo[height<=360]+bestaudio/best[height<=360]/bestvideo+bestaudio/best';
     }
 
     args.push('-f', formatQuery);
     args.push('--merge-output-format', 'mp4');
-    // --merge-output-format only controls the container when streams are
-    // merged. A progressive WebM fallback would otherwise remain WebM, so
-    // explicitly recode every video result to guarantee an MP4 download.
     args.push('--recode-video', 'mp4');
   }
 
-  // Target URL
   args.push(url);
 
-  // Spawn yt-dlp process
   const child = spawn('python', args);
 
-  // Kill download if it takes longer than 10 minutes
   const downloadTimeout = setTimeout(() => {
     child.kill();
     task.status = 'failed';
@@ -421,8 +337,6 @@ export function startDownload(taskId: string, url: string, format: string, video
     const line = data.toString();
     console.log(`[yt-dlp ${stream}]: ${line.trim()}`);
 
-    // yt-dlp writes progress and FFmpeg post-processing messages to stderr by
-    // default, so parse both streams.
     if (line.includes('[ffmpeg]') || line.includes('[VideoConvertor]')) {
       task.status = 'merging';
       task.percent = Math.max(task.percent, 99);
@@ -432,7 +346,6 @@ export function startDownload(taskId: string, url: string, format: string, video
       return;
     }
 
-    // Example: [download]   2.3% of ~10.42MiB at  3.45MiB/s ETA 00:02
     const percentMatch = line.match(/(\d+(?:\.\d+)?)%/);
     const speedMatch = line.match(/at\s+([\d.]+\w+\/s|Unknown speed)/);
     const etaMatch = line.match(/ETA\s+(\d+:\d+|Unknown)/);
@@ -455,15 +368,12 @@ export function startDownload(taskId: string, url: string, format: string, video
       task.status = 'failed';
       task.error = 'Download failed. Check URL or network connection.';
       activeTasks.set(taskId, { ...task });
-      // Cleanup temp dir on failure
       try {
         fs.rmSync(tempDir, { recursive: true, force: true });
       } catch { }
       return;
     }
 
-    // Find the downloaded file inside tempDir. Video downloads must have
-    // completed yt-dlp post-processing before they are exposed to the client.
     try {
       const files = fs.readdirSync(tempDir);
       const downloadedFile = files.find((file) => {
@@ -478,7 +388,7 @@ export function startDownload(taskId: string, url: string, format: string, video
         return;
       }
 
-      const originalExt = path.extname(downloadedFile); // .mp4 for video, .mp3 for audio
+      const originalExt = path.extname(downloadedFile);
       const cleanTitle = sanitizeFilename(videoTitle);
       const displayFilename = `${cleanTitle}${originalExt}`;
       const finalFilePath = path.join(tempDir, downloadedFile);

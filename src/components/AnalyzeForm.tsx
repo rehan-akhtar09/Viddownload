@@ -104,7 +104,7 @@ export default function AnalyzeForm({ onAnalyzeSuccess, onAnalyzeStart, onAnalyz
               setUrl(e.target.value);
               if (errorMsg) setErrorMsg('');
             }}
-            placeholder="Paste YouTube video, Shorts, or watch URL here..."
+            placeholder="Paste any video URL (YouTube, TikTok, Instagram, Twitter, Facebook...) or Shorts link here..."
             disabled={loading}
             className="pr-12 border-white/10 focus:border-red-500"
           />

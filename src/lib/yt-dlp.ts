@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import ffmpegPath from 'ffmpeg-static';
-import { exec as ytDlpExec } from 'yt-dlp-exec';
+import { create as createYtDlp } from 'yt-dlp-exec';
 
 export interface VideoBasicInfo {
   title: string;
@@ -121,6 +121,54 @@ function sanitizeFilename(name: string): string {
   return cleaned || 'video';
 }
 
+let ytDlpPathPromise: Promise<string> | undefined;
+
+async function resolveYtDlpPath(): Promise<string> {
+  if (!ytDlpPathPromise) {
+    ytDlpPathPromise = (async () => {
+      const configuredPath = process.env.YTDLP_PATH?.trim();
+      const bundledPath = configuredPath || path.join(
+        process.cwd(),
+        'node_modules',
+        'yt-dlp-exec',
+        'bin',
+        process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp',
+      );
+
+      await fs.promises.access(bundledPath, fs.constants.R_OK);
+      if (process.platform === 'win32') return bundledPath;
+
+      // Deployment bundles can lose executable mode bits. /tmp is writable on Vercel.
+      const executablePath = path.join(os.tmpdir(), 'avd-yt-dlp');
+      await fs.promises.copyFile(bundledPath, executablePath);
+      await fs.promises.chmod(executablePath, 0o755);
+      return executablePath;
+    })().catch((error) => {
+      ytDlpPathPromise = undefined;
+      throw error;
+    });
+  }
+
+  return ytDlpPathPromise;
+}
+
+async function runYtDlp(
+  url: string,
+  flags: Record<string, string | number | boolean>,
+  options: { timeout: number; maxBuffer: number },
+) {
+  const executablePath = await resolveYtDlpPath();
+  return createYtDlp(executablePath).exec(url, flags, options);
+}
+
+function getYtDlpErrorOutput(error: unknown): string {
+  if (!(error instanceof Error)) return '';
+  const stderr = 'stderr' in error
+    ? String((error as Error & { stderr?: unknown }).stderr || '').trim()
+    : '';
+  return stderr || error.message;
+}
+
 function parseYtDlpError(stderr: string): string {
   const message = stderr || '';
   if (/private video/i.test(message)) return 'This video is private and cannot be downloaded.';
@@ -167,11 +215,24 @@ function commonFlags() {
   };
 }
 
+function parseYtDlpMetadata(stdout: string): YtDlpMetadata {
+  try {
+    return JSON.parse(stdout) as YtDlpMetadata;
+  } catch (parseError) {
+    const jsonLine = stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.startsWith('{'));
+    if (jsonLine) return JSON.parse(jsonLine) as YtDlpMetadata;
+    throw parseError;
+  }
+}
+
 export async function getVideoBasicInfo(input: string): Promise<VideoBasicInfo> {
   const url = validateUrl(input);
 
   try {
-    const result = await ytDlpExec(url, {
+    const result = await runYtDlp(url, {
       ...commonFlags(),
       dumpSingleJson: true,
       skipDownload: true,
@@ -180,7 +241,7 @@ export async function getVideoBasicInfo(input: string): Promise<VideoBasicInfo> 
       maxBuffer: 20 * 1024 * 1024,
     });
 
-    const metadata = JSON.parse(result.stdout) as YtDlpMetadata;
+    const metadata = parseYtDlpMetadata(result.stdout);
     const heights = new Set(
       (metadata.formats ?? [])
         .filter((format) => format.vcodec !== 'none' && Number.isFinite(format.height))
@@ -206,10 +267,9 @@ export async function getVideoBasicInfo(input: string): Promise<VideoBasicInfo> 
       },
     };
   } catch (error: unknown) {
-    const stderr = typeof error === 'object' && error && 'stderr' in error
-      ? String((error as { stderr?: unknown }).stderr || '')
-      : error instanceof Error ? error.message : '';
-    throw new Error(parseYtDlpError(stderr));
+    const output = getYtDlpErrorOutput(error);
+    if (output) throw new Error(parseYtDlpError(output));
+    throw error;
   }
 }
 
@@ -245,7 +305,7 @@ export async function downloadVideo(
   }
 
   try {
-    await ytDlpExec(url, flags, {
+    await runYtDlp(url, flags, {
       timeout: 5 * 60_000,
       maxBuffer: 20 * 1024 * 1024,
     });
@@ -270,9 +330,6 @@ export async function downloadVideo(
     };
   } catch (error: unknown) {
     await fs.promises.rm(directory, { recursive: true, force: true }).catch(() => undefined);
-    const stderr = typeof error === 'object' && error && 'stderr' in error
-      ? String((error as { stderr?: unknown }).stderr || '')
-      : error instanceof Error ? error.message : '';
-    throw new Error(parseYtDlpError(stderr));
+    throw new Error(parseYtDlpError(getYtDlpErrorOutput(error)));
   }
 }

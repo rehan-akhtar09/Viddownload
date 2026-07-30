@@ -135,7 +135,11 @@ async function resolveYtDlpPath(): Promise<string> {
       const configuredPath = process.env.YTDLP_PATH?.trim();
       const bundledPath = configuredPath || bundledYtDlpPath;
 
-      await fs.promises.access(bundledPath, fs.constants.R_OK);
+      try {
+        await fs.promises.access(bundledPath, fs.constants.R_OK);
+      } catch {
+        throw new Error('AVD_BINARY_MISSING');
+      }
       if (process.platform === 'win32') return bundledPath;
 
       // Deployment bundles can lose executable mode bits. /tmp is writable on Vercel.
@@ -171,8 +175,10 @@ function getYtDlpErrorOutput(error: unknown): string {
 
 function parseYtDlpError(stderr: string): string {
   const message = stderr || '';
-  if (/ENOENT|no such file or directory/i.test(message)) return 'The downloader executable is unavailable on this server.';
+  if (/AVD_BINARY_MISSING/i.test(message)) return 'The downloader executable is unavailable on this server.';
+  if (/spawn .*ENOENT/i.test(message)) return 'The server could not launch the downloader executable.';
   if (/EACCES|permission denied/i.test(message)) return 'The downloader executable cannot run on this server.';
+  if (/no such file or directory/i.test(message)) return 'A runtime required by the downloader is unavailable on this server.';
   if (/exec format error|not a valid win32 application/i.test(message)) return 'The downloader executable is incompatible with this server.';
   if (/cannot find module|module_not_found/i.test(message)) return 'A required downloader module is unavailable on this server.';
   if (/private video/i.test(message)) return 'This video is private and cannot be downloaded.';

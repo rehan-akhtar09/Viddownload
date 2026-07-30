@@ -171,6 +171,10 @@ function getYtDlpErrorOutput(error: unknown): string {
 
 function parseYtDlpError(stderr: string): string {
   const message = stderr || '';
+  if (/ENOENT|no such file or directory/i.test(message)) return 'The downloader executable is unavailable on this server.';
+  if (/EACCES|permission denied/i.test(message)) return 'The downloader executable cannot run on this server.';
+  if (/exec format error|not a valid win32 application/i.test(message)) return 'The downloader executable is incompatible with this server.';
+  if (/cannot find module|module_not_found/i.test(message)) return 'A required downloader module is unavailable on this server.';
   if (/private video/i.test(message)) return 'This video is private and cannot be downloaded.';
   if (/sign in|login required|cookies/i.test(message)) return 'This media requires login or cookies and cannot be downloaded by this server.';
   if (/not a bot|bot verification/i.test(message)) return 'The platform blocked this server with bot verification.';

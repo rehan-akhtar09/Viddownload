@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { validateUrl, getVideoDirectUrl } from '@/lib/yt-dlp';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -41,21 +40,44 @@ async function getYouTubeStreamUrl(url: string): Promise<string | null> {
 export async function POST(request: Request) {
   try {
     const body = await request.json() as { url?: unknown; format?: unknown; title?: unknown };
-    if (typeof body.url !== 'string') {
+    if (typeof body.url !== 'string' || !body.url.trim()) {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
-    const url = validateUrl(body.url);
+
+    const url = body.url.trim();
     const format = typeof body.format === 'string' ? body.format : 'video-highest';
     const title = typeof body.title === 'string' ? body.title : 'video';
 
-    // Use same yt-dlp binary + error handling as analyze route
+    // Use yt-dlp-exec's bundled binary (pre-installed in node_modules, no runtime download needed)
     try {
-      const directUrl = await getVideoDirectUrl(url, format);
-      return NextResponse.json({ downloadUrl: directUrl, title, format, status: 'completed' });
-    } catch {
-      // yt-dlp get-url failed; try YouTube page API
+      const ytExec = (await import('yt-dlp-exec')).default;
+      const formatMap: Record<string, string> = {
+        'video-highest': 'best',
+        'video-1080p': 'best[height<=1080]',
+        'video-720p': 'best[height<=720]',
+        'video-480p': 'best[height<=480]',
+        'video-360p': 'best[height<=360]',
+        'audio-128kbps': 'bestaudio/best',
+        'audio-192kbps': 'bestaudio/best',
+        'audio-320kbps': 'bestaudio/best',
+      };
+      const result = await ytExec(url, {
+        getUrl: true,
+        format: formatMap[format] || 'best',
+        noPlaylist: true,
+        socketTimeout: 10,
+        noWarnings: true,
+      }) as unknown as string;
+      const downloadUrl = (result || '').trim();
+      if (downloadUrl && downloadUrl.startsWith('http')) {
+        return NextResponse.json({ downloadUrl, title, format, status: 'completed' });
+      }
+      console.error('yt-dlp get-url returned no valid URL:', result);
+    } catch (ytErr) {
+      console.error('yt-dlp get-url failed:', ytErr instanceof Error ? ytErr.message : String(ytErr));
     }
 
+    // Fallback: YouTube page API
     const streamUrl = await getYouTubeStreamUrl(url);
     if (streamUrl) {
       return NextResponse.json({ downloadUrl: streamUrl, title, format, status: 'completed' });

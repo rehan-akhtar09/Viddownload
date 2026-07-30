@@ -318,6 +318,43 @@ export async function getVideoBasicInfo(input: string): Promise<VideoBasicInfo> 
   }
 }
 
+const formatToYtDlp: Record<string, string> = {
+  'video-highest': 'best',
+  'video-1080p': 'best[height<=1080]',
+  'video-720p': 'best[height<=720]',
+  'video-480p': 'best[height<=480]',
+  'video-360p': 'best[height<=360]',
+  'audio-128kbps': 'bestaudio/best',
+  'audio-192kbps': 'bestaudio/best',
+  'audio-320kbps': 'bestaudio/best',
+};
+
+export async function getVideoDirectUrl(input: string, format: string): Promise<string> {
+  const url = validateUrl(input);
+  const formatArg = formatToYtDlp[format] || 'best';
+
+  try {
+    const result = await runYtDlp(url, {
+      getUrl: true,
+      format: formatArg,
+      noPlaylist: true,
+      socketTimeout: 15,
+      noWarnings: true,
+    }, {
+      timeout: 25_000,
+      maxBuffer: 5_000_000,
+    });
+
+    const downloadUrl = result.stdout?.trim();
+    if (downloadUrl && downloadUrl.startsWith('http')) {
+      return downloadUrl;
+    }
+    throw new Error('No downloadable URL returned by the server.');
+  } catch (error) {
+    throw new Error(parseYtDlpError(getYtDlpErrorOutput(error)));
+  }
+}
+
 export async function downloadVideo(
   input: string,
   requestedFormat: string,

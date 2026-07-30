@@ -130,10 +130,21 @@ function sanitizeFilename(name: string): string {
 let ytDlpPathPromise: Promise<string> | undefined;
 
 async function installYtDlp(executablePath: string): Promise<string> {
-  const downloadUrl = process.platform === 'win32'
-    ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
-    : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
-  const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(30_000) });
+  let assetName: string;
+  if (process.platform === 'win32') {
+    assetName = 'yt-dlp.exe';
+  } else if (process.platform === 'darwin') {
+    assetName = 'yt-dlp_macos';
+  } else if (process.platform === 'linux' && process.arch === 'arm64') {
+    assetName = 'yt-dlp_linux_aarch64';
+  } else if (process.platform === 'linux' && process.arch === 'x64') {
+    assetName = 'yt-dlp_linux';
+  } else {
+    throw new Error('AVD_BINARY_PLATFORM_UNSUPPORTED');
+  }
+
+  const downloadUrl = `https://github.com/yt-dlp/yt-dlp/releases/latest/download/${assetName}`;
+  const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(45_000) });
   if (!response.ok) throw new Error(`AVD_BINARY_DOWNLOAD_FAILED_${response.status}`);
 
   const binary = Buffer.from(await response.arrayBuffer());
@@ -199,7 +210,7 @@ function getYtDlpErrorOutput(error: unknown): string {
 
 function parseYtDlpError(stderr: string): string {
   const message = stderr || '';
-  if (/AVD_BINARY_DOWNLOAD_FAILED|AVD_BINARY_DOWNLOAD_INVALID/i.test(message)) return 'The server could not install the downloader executable.';
+  if (/AVD_BINARY_DOWNLOAD_FAILED|AVD_BINARY_DOWNLOAD_INVALID|AVD_BINARY_PLATFORM_UNSUPPORTED/i.test(message)) return 'The server could not install the downloader executable.';
   if (/spawn .*ENOENT/i.test(message)) return 'The server could not launch the downloader executable.';
   if (/EACCES|permission denied/i.test(message)) return 'The downloader executable cannot run on this server.';
   if (/no such file or directory/i.test(message)) return 'A runtime required by the downloader is unavailable on this server.';

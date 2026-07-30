@@ -129,24 +129,48 @@ function sanitizeFilename(name: string): string {
 
 let ytDlpPathPromise: Promise<string> | undefined;
 
+async function installYtDlp(executablePath: string): Promise<string> {
+  const downloadUrl = process.platform === 'win32'
+    ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+    : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+  const response = await fetch(downloadUrl, { signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new Error(`AVD_BINARY_DOWNLOAD_FAILED_${response.status}`);
+
+  const binary = Buffer.from(await response.arrayBuffer());
+  if (binary.length < 1_000_000 || binary.length > 100_000_000) {
+    throw new Error('AVD_BINARY_DOWNLOAD_INVALID');
+  }
+
+  await fs.promises.writeFile(executablePath, binary, { mode: 0o755 });
+  if (process.platform !== 'win32') await fs.promises.chmod(executablePath, 0o755);
+  return executablePath;
+}
+
 async function resolveYtDlpPath(): Promise<string> {
   if (!ytDlpPathPromise) {
     ytDlpPathPromise = (async () => {
       const configuredPath = process.env.YTDLP_PATH?.trim();
-      const bundledPath = configuredPath || bundledYtDlpPath;
+      if (configuredPath) {
+        await fs.promises.access(configuredPath, fs.constants.R_OK);
+        return configuredPath;
+      }
+
+      const executablePath = path.join(
+        os.tmpdir(),
+        process.platform === 'win32' ? 'avd-yt-dlp.exe' : 'avd-yt-dlp',
+      );
 
       try {
-        await fs.promises.access(bundledPath, fs.constants.R_OK);
-      } catch {
-        throw new Error('AVD_BINARY_MISSING');
-      }
-      if (process.platform === 'win32') return bundledPath;
+        await fs.promises.access(bundledYtDlpPath, fs.constants.R_OK);
+        if (process.platform === 'win32') return bundledYtDlpPath;
 
-      // Deployment bundles can lose executable mode bits. /tmp is writable on Vercel.
-      const executablePath = path.join(os.tmpdir(), 'avd-yt-dlp');
-      await fs.promises.copyFile(bundledPath, executablePath);
-      await fs.promises.chmod(executablePath, 0o755);
-      return executablePath;
+        // Deployment bundles can lose executable mode bits. /tmp is writable on Vercel.
+        await fs.promises.copyFile(bundledYtDlpPath, executablePath);
+        await fs.promises.chmod(executablePath, 0o755);
+        return executablePath;
+      } catch {
+        return installYtDlp(executablePath);
+      }
     })().catch((error) => {
       ytDlpPathPromise = undefined;
       throw error;
@@ -175,7 +199,7 @@ function getYtDlpErrorOutput(error: unknown): string {
 
 function parseYtDlpError(stderr: string): string {
   const message = stderr || '';
-  if (/AVD_BINARY_MISSING/i.test(message)) return 'The downloader executable is unavailable on this server.';
+  if (/AVD_BINARY_DOWNLOAD_FAILED|AVD_BINARY_DOWNLOAD_INVALID/i.test(message)) return 'The server could not install the downloader executable.';
   if (/spawn .*ENOENT/i.test(message)) return 'The server could not launch the downloader executable.';
   if (/EACCES|permission denied/i.test(message)) return 'The downloader executable cannot run on this server.';
   if (/no such file or directory/i.test(message)) return 'A runtime required by the downloader is unavailable on this server.';

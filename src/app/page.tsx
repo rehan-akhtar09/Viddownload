@@ -103,19 +103,29 @@ export default function Home() {
       setTaskSpeed('Finalizing');
       setTaskEta('Almost ready');
 
-      const blob = await res.blob();
-      const disposition = res.headers.get('Content-Disposition') || '';
-      const utf8Name = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-      const fallbackName = disposition.match(/filename="([^"]+)"/i)?.[1];
-      const fileName = utf8Name ? decodeURIComponent(utf8Name) : (fallbackName || 'download.mp4');
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = fileName;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      const contentType = res.headers.get('Content-Type') || '';
+      if (contentType.startsWith('application/json')) {
+        const data = await res.json() as { downloadUrl?: string; error?: string };
+        if (data.downloadUrl) {
+          window.open(data.downloadUrl, '_blank');
+        } else {
+          throw new Error(data.error || 'No download URL received');
+        }
+      } else {
+        const blob = await res.blob();
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const utf8Name = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+        const fallbackName = disposition.match(/filename="([^"]+)"/i)?.[1];
+        const fileName = utf8Name ? decodeURIComponent(utf8Name) : (fallbackName || 'download.mp4');
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      }
 
       setTaskStatus('completed');
       setActiveFormat(undefined);

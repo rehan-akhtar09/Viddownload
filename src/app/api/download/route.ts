@@ -1,10 +1,37 @@
-import fs from 'fs';
-import { Readable } from 'stream';
 import { NextResponse } from 'next/server';
-import { downloadVideo } from '@/lib/yt-dlp';
+import { validateUrl } from '@/lib/yt-dlp';
 
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const maxDuration = 30;
+
+async function getYtDlpDirectUrl(url: string, format: string): Promise<string | null> {
+  try {
+    const { exec } = await import('yt-dlp-exec');
+    const formatMap: Record<string, string> = {
+      'video-highest': 'best',
+      'video-1080p': 'best[height<=1080]',
+      'video-720p': 'best[height<=720]',
+      'video-480p': 'best[height<=480]',
+      'video-360p': 'best[height<=360]',
+      'audio-128kbps': 'bestaudio/best',
+      'audio-192kbps': 'bestaudio/best',
+      'audio-320kbps': 'bestaudio/best',
+    };
+    const formatArg = formatMap[format] || 'best';
+    const res = await exec(url, {
+      getUrl: true,
+      format: formatArg,
+      noPlaylist: true,
+      socketTimeout: 15,
+      noWarnings: true,
+    });
+    const downloadUrl = res.stdout?.trim();
+    if (downloadUrl && downloadUrl.startsWith('http')) {
+      return downloadUrl;
+    }
+    return null;
+  } catch { return null; }
+}
 
 async function getYouTubeStreamUrl(url: string): Promise<string | null> {
   try {
@@ -25,26 +52,22 @@ async function getYouTubeStreamUrl(url: string): Promise<string | null> {
         return sorted[0].url;
       }
     }
-    const initialMatch = html.match(/ytInitialData\s*=\s*({.+?});/);
-    if (initialMatch) {
-      const videoId = new URL(url).searchParams.get('v');
-      if (videoId) {
-        const apiRes = await fetch(`https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            videoId,
-            context: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 30 } },
-          }),
-          signal: AbortSignal.timeout(5000),
-        });
-        const apiData = await apiRes.json();
-        const fmts = [...(apiData.streamingData?.formats || []), ...(apiData.streamingData?.adaptiveFormats || [])];
-        const withUrl2 = fmts.filter((f: any) => f.url);
-        if (withUrl2.length > 0) {
-          const sorted2 = withUrl2.sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
-          return sorted2[0].url;
-        }
+    const videoId = new URL(url).searchParams.get('v');
+    if (videoId) {
+      const apiRes = await fetch('https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId,
+          context: { client: { clientName: 'ANDROID', clientVersion: '19.09.37', androidSdkVersion: 30 } },
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const apiData = await apiRes.json();
+      const fmts = [...(apiData.streamingData?.formats || []), ...(apiData.streamingData?.adaptiveFormats || [])];
+      const withUrl2 = fmts.filter((f: any) => f.url);
+      if (withUrl2.length > 0) {
+        return withUrl2.sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0].url;
       }
     }
     return null;
@@ -54,54 +77,27 @@ async function getYouTubeStreamUrl(url: string): Promise<string | null> {
 export async function POST(request: Request) {
   try {
     const body = await request.json() as { url?: unknown; format?: unknown; title?: unknown };
-
     if (typeof body.url !== 'string') {
       return NextResponse.json({ error: 'Missing required parameter: url.' }, { status: 400 });
     }
-    if (typeof body.format !== 'string') {
-      return NextResponse.json({ error: 'Missing required parameter: format.' }, { status: 400 });
-    }
-
-    const url = body.url;
-    const format = body.format;
+    const url = validateUrl(body.url);
+    const format = typeof body.format === 'string' ? body.format : 'video-highest';
     const title = typeof body.title === 'string' ? body.title : 'video';
 
-    // Try yt-dlp download first
-    try {
-      const downloaded = await downloadVideo(url, format, title);
-      const fileStream = fs.createReadStream(downloaded.filePath);
-      const cleanup = () => {
-        void fs.promises.rm(downloaded.directory, { recursive: true, force: true }).catch((error) => {
-          console.error('Temporary download cleanup failed:', error);
-        });
-      };
-      fileStream.once('close', cleanup);
-
-      const encodedName = encodeURIComponent(downloaded.fileName);
-      const extension = downloaded.fileName.match(/\.[a-z0-9]+$/i)?.[0] || '';
-      return new Response(Readable.toWeb(fileStream) as ReadableStream, {
-        headers: {
-          'Content-Type': downloaded.contentType,
-          'Content-Length': downloaded.size.toString(),
-          'Content-Disposition': `attachment; filename="download${extension}"; filename*=UTF-8''${encodedName}`,
-          'Cache-Control': 'private, no-store, max-age=0',
-          'X-Content-Type-Options': 'nosniff',
-        },
-      });
-    } catch (ytErr) {
-      const msg = ytErr instanceof Error ? ytErr.message : '';
-      const loginRequired = /login|cookies|sign in|private/i.test(msg);
-      if (loginRequired) {
-        // Fallback: try YouTube page API for stream URL
-        const streamUrl = await getYouTubeStreamUrl(url);
-        if (streamUrl) {
-          return NextResponse.redirect(streamUrl, 302);
-        }
-        // Last resort: redirect to original URL
-        return NextResponse.json({ taskId: 'fallback', status: 'completed', percent: 100, downloadUrl: url, title, format });
-      }
-      throw ytErr;
+    // Try yt-dlp --get-url first (fast, works on Vercel)
+    const ytDlpUrl = await getYtDlpDirectUrl(url, format);
+    if (ytDlpUrl) {
+      return NextResponse.json({ downloadUrl: ytDlpUrl, title, format, status: 'completed' });
     }
+
+    // Fallback: YouTube page API
+    const streamUrl = await getYouTubeStreamUrl(url);
+    if (streamUrl) {
+      return NextResponse.json({ downloadUrl: streamUrl, title, format, status: 'completed' });
+    }
+
+    // Last resort: open original URL
+    return NextResponse.json({ downloadUrl: url, title, format, status: 'completed' });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to download this media.';
     console.error('Download API error:', message);

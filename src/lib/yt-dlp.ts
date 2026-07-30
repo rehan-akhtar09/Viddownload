@@ -4,6 +4,12 @@ import path from 'path';
 import ffmpegPath from 'ffmpeg-static';
 import { create as createYtDlp } from 'yt-dlp-exec';
 
+// This internal constant is resolved from yt-dlp-exec's real runtime directory.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { YOUTUBE_DL_PATH: bundledYtDlpPath } = require('yt-dlp-exec/src/constants') as {
+  YOUTUBE_DL_PATH: string;
+};
+
 export interface VideoBasicInfo {
   title: string;
   uploader: string;
@@ -127,13 +133,7 @@ async function resolveYtDlpPath(): Promise<string> {
   if (!ytDlpPathPromise) {
     ytDlpPathPromise = (async () => {
       const configuredPath = process.env.YTDLP_PATH?.trim();
-      const bundledPath = configuredPath || path.join(
-        process.cwd(),
-        'node_modules',
-        'yt-dlp-exec',
-        'bin',
-        process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp',
-      );
+      const bundledPath = configuredPath || bundledYtDlpPath;
 
       await fs.promises.access(bundledPath, fs.constants.R_OK);
       if (process.platform === 'win32') return bundledPath;

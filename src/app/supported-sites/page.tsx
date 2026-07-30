@@ -3,7 +3,7 @@ import { Globe } from 'lucide-react';
 const categories = [
   {
     name: 'Social Media',
-    sites: ['YouTube', 'TikTok', 'Instagram', 'Twitter / X', 'Facebook', 'Reddit', 'LinkedIn', 'Pinterest', 'Snapchat', 'Telegram', 'WhatsApp', 'Discord'],
+    sites: ['YouTube', 'TikTok', 'Instagram', 'Twitter / X', 'Facebook', 'Reddit', 'LinkedIn', 'Pinterest', 'Snapchat'],
   },
   {
     name: 'Video Platforms',
@@ -38,7 +38,7 @@ export default function SupportedSites() {
         </div>
 
         <p className="text-sm md:text-base text-neutral-600 dark:text-neutral-300 leading-relaxed">
-          All Video Downloader is powered by yt-dlp, which supports over 1,700 websites and platforms. Here are some of the most popular ones we support:
+          All Video Downloader is powered by yt-dlp, which supports over 1,700 websites and platforms. Here are some of the most popular ones we support. Some platforms may require the content to be public, and download success can vary by platform due to each site's own restrictions.
         </p>
 
         <div className="grid gap-6 md:grid-cols-2">

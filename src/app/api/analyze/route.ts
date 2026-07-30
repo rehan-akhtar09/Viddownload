@@ -104,15 +104,13 @@ export async function POST(request: Request) {
       });
     } catch (ytErr) {
       const msg = ytErr instanceof Error ? ytErr.message : '';
-      // If yt-dlp says login required, fall back to oembed
-      const loginRequired = /login|cookies|sign in|private/i.test(msg);
-      if (!loginRequired) throw ytErr;
+      console.error('yt-dlp extraction failed, falling back to oEmbed:', msg);
     }
 
     // Fallback: oembed/noembed
     const platform = detectPlatform(url);
     const oembed = await analyzeViaOembed(url, platform);
-    if (oembed) return NextResponse.json(oembed);
+    if (oembed) return NextResponse.json({ ...oembed, extractionLimited: true, extractionNote: 'Limited info available — full download may require additional access.' });
 
     // Last resort
     return NextResponse.json({

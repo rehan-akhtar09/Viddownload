@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const downloaderFiles = [
-  "./node_modules/yt-dlp-exec/bin/**/*",
+  "./runtime-bin/**/*",
   "./node_modules/ffmpeg-static/**/*",
 ];
 

@@ -4,11 +4,11 @@ import path from 'path';
 import ffmpegPath from 'ffmpeg-static';
 import { create as createYtDlp } from 'yt-dlp-exec';
 
-// This internal constant is resolved from yt-dlp-exec's real runtime directory.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { YOUTUBE_DL_PATH: bundledYtDlpPath } = require('yt-dlp-exec/src/constants') as {
-  YOUTUBE_DL_PATH: string;
-};
+const bundledYtDlpPath = path.join(
+  process.cwd(),
+  'runtime-bin',
+  process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp',
+);
 
 export interface VideoBasicInfo {
   title: string;

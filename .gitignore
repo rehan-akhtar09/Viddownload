@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# temp download files
+# generated runtime files
 /.temp/
+/runtime-bin/
 
 # env files
 .env*

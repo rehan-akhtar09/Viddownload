@@ -191,12 +191,37 @@ async function resolveYtDlpPath(): Promise<string> {
   return ytDlpPathPromise;
 }
 
+let cookiesPathPromise: Promise<string | undefined> | undefined;
+
+async function resolveCookiesPath(): Promise<string | undefined> {
+  if (!cookiesPathPromise) {
+    cookiesPathPromise = (async () => {
+      const content = process.env.COOKIES_FILE_CONTENT?.trim();
+      if (!content) return undefined;
+
+      const decoded = Buffer.from(content, 'base64').toString('utf-8');
+      const cookiesPath = path.join(os.tmpdir(), 'avd-cookies.txt');
+      await fs.promises.writeFile(cookiesPath, decoded, { mode: 0o600 });
+      return cookiesPath;
+    })().catch((error) => {
+      cookiesPathPromise = undefined;
+      console.error('Failed to write cookies file from COOKIES_FILE_CONTENT:', error);
+      return undefined;
+    });
+  }
+  return cookiesPathPromise;
+}
+
 async function runYtDlp(
   url: string,
   flags: Record<string, string | number | boolean>,
   options: { timeout: number; maxBuffer: number },
 ) {
   const executablePath = await resolveYtDlpPath();
+  const cookiesPath = await resolveCookiesPath();
+  if (cookiesPath) {
+    flags.cookies = cookiesPath;
+  }
   return createYtDlp(executablePath).exec(url, flags, options);
 }
 
@@ -249,7 +274,8 @@ function contentTypeForExtension(extension: string): string {
   return types[extension] || 'application/octet-stream';
 }
 
-function commonFlags() {
+async function commonFlags() {
+  const cookiesPath = await resolveCookiesPath();
   return {
     noPlaylist: true,
     socketTimeout: 20,
@@ -257,6 +283,7 @@ function commonFlags() {
     retries: 2,
     noWarnings: true,
     jsRuntimes: 'node',
+    ...(cookiesPath ? { cookies: cookiesPath } : {}),
   };
 }
 
@@ -278,7 +305,7 @@ export async function getVideoBasicInfo(input: string): Promise<VideoBasicInfo> 
 
   try {
     const result = await runYtDlp(url, {
-      ...commonFlags(),
+      ...(await commonFlags()),
       dumpSingleJson: true,
       skipDownload: true,
     }, {
@@ -367,7 +394,7 @@ export async function downloadVideo(
   const isAudio = format.startsWith('audio-');
 
   const flags: Record<string, string | number | boolean> = {
-    ...commonFlags(),
+    ...(await commonFlags()),
     newline: true,
     output: outputTemplate,
   };

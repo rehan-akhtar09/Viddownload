@@ -171,7 +171,19 @@ async function resolveYtDlpPath(): Promise<string> {
         process.platform === 'win32' ? 'avd-yt-dlp.exe' : 'avd-yt-dlp',
       );
 
+      // Reuse a latest binary downloaded earlier in this warm instance.
       try {
+        const existing = await fs.promises.stat(executablePath);
+        if (existing.size > 1_000_000) return executablePath;
+      } catch {
+        // Not downloaded yet in this instance.
+      }
+
+      // Always prefer the latest yt-dlp from GitHub releases: the binary
+      // bundled with yt-dlp-exec is old, and YouTube rejects old versions.
+      try {
+        return await installYtDlp(executablePath);
+      } catch {
         await fs.promises.access(bundledYtDlpPath, fs.constants.R_OK);
         if (process.platform === 'win32') return bundledYtDlpPath;
 
@@ -179,8 +191,6 @@ async function resolveYtDlpPath(): Promise<string> {
         await fs.promises.copyFile(bundledYtDlpPath, executablePath);
         await fs.promises.chmod(executablePath, 0o755);
         return executablePath;
-      } catch {
-        return installYtDlp(executablePath);
       }
     })().catch((error) => {
       ytDlpPathPromise = undefined;

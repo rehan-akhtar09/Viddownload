@@ -10,25 +10,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     let variantClasses = '';
     switch (variant) {
       case 'default':
-        variantClasses = 'bg-red-600 text-white shadow-lg shadow-red-600/10 hover:bg-red-500 hover:shadow-red-500/20 active:scale-[0.98]';
+        variantClasses = 'bg-violet-600 text-white shadow-lg shadow-violet-600/15 hover:bg-violet-500 hover:shadow-violet-500/20 active:scale-[0.98]';
         break;
       case 'premium':
-        variantClasses = 'bg-gradient-to-r from-red-600 to-amber-500 text-white shadow-lg shadow-red-500/15 hover:opacity-90 active:scale-[0.98]';
+        variantClasses = 'bg-gradient-to-r from-violet-600 to-cyan-600 text-white shadow-lg shadow-violet-600/20 hover:opacity-95 hover:shadow-violet-500/25 active:scale-[0.98]';
         break;
       case 'destructive':
-        variantClasses = 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30';
+        variantClasses = 'bg-red-500/10 border border-red-500/25 text-red-600 hover:bg-red-500/15 dark:bg-red-500/20 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/30';
         break;
       case 'outline':
-        variantClasses = 'border border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10 hover:text-white active:scale-[0.98]';
+        variantClasses = 'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 hover:border-neutral-400 active:scale-[0.98] dark:border-white/10 dark:bg-white/5 dark:text-neutral-200 dark:hover:bg-white/10 dark:hover:text-white dark:hover:border-white/20';
         break;
       case 'secondary':
-        variantClasses = 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700 hover:text-white';
+        variantClasses = 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white';
         break;
       case 'ghost':
-        variantClasses = 'text-neutral-300 hover:bg-white/5 hover:text-white';
+        variantClasses = 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-white/5 dark:hover:text-white';
         break;
       case 'link':
-        variantClasses = 'text-red-500 underline-offset-4 hover:underline bg-transparent p-0 h-auto';
+        variantClasses = 'text-violet-600 underline-offset-4 hover:underline bg-transparent p-0 h-auto dark:text-violet-400';
         break;
     }
 
@@ -51,7 +51,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={`inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-500 disabled:pointer-events-none disabled:opacity-40 ${variantClasses} ${sizeClasses} ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-950 disabled:pointer-events-none disabled:opacity-40 ${variantClasses} ${sizeClasses} ${className}`}
         {...props}
       />
     );

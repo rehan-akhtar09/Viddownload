@@ -9,11 +9,15 @@ export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
     return (
       <div
         ref={ref}
-        className={`relative h-2 w-full overflow-hidden rounded-full bg-white/10 dark:bg-white/5 ${className}`}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(Math.min(100, Math.max(0, value)))}
+        className={`relative h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-white/5 ${className}`}
         {...props}
       >
         <div
-          className="h-full w-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-300 ease-out"
+          className="h-full w-full bg-gradient-to-r from-violet-600 to-cyan-500 transition-all duration-300 ease-out"
           style={{ transform: `translateX(-${100 - Math.min(100, Math.max(0, value))}%)` }}
         />
       </div>

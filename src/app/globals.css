@@ -6,14 +6,39 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ==========================================
+   DESIGN TOKENS — All Video Downloader
+   Primary accent: electric violet
+   Secondary accent: subtle cyan
+   Dark: deep charcoal surfaces / Light: soft neutral
+   ========================================== */
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f6f7f9;
+  --foreground: #131318;
+  --surface: #ffffff;
+  --surface-muted: #eceef1;
+  --border: rgba(19, 19, 24, 0.09);
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-secondary: #0891b2;
+  --success: #059669;
+  --error: #dc2626;
+  --warning: #d97706;
 }
 
 .dark {
-  --background: #070708;
-  --foreground: #f1f5f9;
+  --background: #0a0a0c;
+  --foreground: #f4f4f5;
+  --surface: #131316;
+  --surface-muted: #1b1b1f;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: #8b5cf6;
+  --accent-hover: #a78bfa;
+  --accent-secondary: #22d3ee;
+  --success: #34d399;
+  --error: #f87171;
+  --warning: #fbbf24;
 }
 
 html {
@@ -26,6 +51,10 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
+}
+
+::selection {
+  background-color: rgba(124, 58, 237, 0.28);
 }
 
 /* Custom premium scrollbar styling */
@@ -52,8 +81,47 @@ body {
 }
 
 /* ==========================================
-   GLASSMORPHISM LIGHT MODE ENHANCEMENTS
-   Translates dark-themed components to elegant light mode variants
+   MOTION — subtle, professional, lightweight
+   ========================================== */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-up-1 { animation-delay: 0.05s; }
+.animate-fade-up-2 { animation-delay: 0.12s; }
+.animate-fade-up-3 { animation-delay: 0.2s; }
+.animate-fade-up-4 { animation-delay: 0.28s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==========================================
+   LEGACY LIGHT-MODE BRIDGE
+   Older pages were authored dark-first; these rules keep
+   them readable in light mode. Redesigned components use
+   explicit dark: variants and do not depend on this block.
    ========================================== */
 
 html:not(.dark) .backdrop-blur-md {
@@ -65,13 +133,13 @@ html:not(.dark) .backdrop-blur-md {
 html:not(.dark) input:not(.admin-input),
 html:not(.dark) .not-admin input {
   background-color: rgba(0, 0, 0, 0.02);
-  color: #0f172a;
+  color: #131318;
   border-color: rgba(15, 23, 42, 0.1);
 }
 
 html:not(.dark) input:focus:not(.admin-input) {
   background-color: #ffffff;
-  border-color: rgba(239, 68, 68, 0.8);
+  border-color: rgba(124, 58, 237, 0.8);
 }
 
 .admin-input,
@@ -82,23 +150,23 @@ textarea.admin-input {
   color-scheme: dark;
 }
 
-html:not(.dark) button:not(.bg-red-600):not(.from-red-600) {
+html:not(.dark) button:not(.bg-red-600):not(.from-red-600):not(.bg-violet-600):not(.from-violet-600) {
   border-color: rgba(15, 23, 42, 0.08) !important;
   background-color: rgba(255, 255, 255, 0.6) !important;
   color: #334155 !important;
 }
 
-html:not(.dark) button:not(.bg-red-600):not(.from-red-600):hover {
+html:not(.dark) button:not(.bg-red-600):not(.from-red-600):not(.bg-violet-600):not(.from-violet-600):hover {
   background-color: rgba(255, 255, 255, 0.9) !important;
   color: #0f172a !important;
 }
 
 html:not(.dark) .text-white {
-  color: #0f172a !important;
+  color: #131318 !important;
 }
 
 html:not(.dark) .text-neutral-100 {
-  color: #0f172a !important;
+  color: #131318 !important;
 }
 
 html:not(.dark) .text-neutral-200 {

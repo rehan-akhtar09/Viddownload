@@ -1,74 +1,94 @@
 import Link from 'next/link';
 import { Play, Mail } from 'lucide-react';
 
-const footerLinks = [
+const exploreLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/supported-sites', label: 'Supported Platforms' },
+  { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/about', label: 'About Us' },
+  { href: '/contact-us', label: 'Contact Us' },
+];
+
+const legalLinks = [
   { href: '/privacy-policy', label: 'Privacy Policy' },
   { href: '/terms-of-service', label: 'Terms of Service' },
   { href: '/dmca', label: 'DMCA' },
-  { href: '/about', label: 'About Us' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/contact-us', label: 'Contact Us' },
 ];
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 mt-auto">
-      <div className="mx-auto max-w-6xl px-4 md:px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/20">
+    <footer className="w-full border-t border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-950 mt-auto">
+      <div className="mx-auto max-w-6xl px-4 md:px-8 py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
+          <div className="space-y-3 sm:col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-violet-600/20">
                 <Play className="h-4 w-4 fill-white text-white translate-x-[1px]" />
               </div>
-              <span className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-black to-neutral-600 dark:from-white dark:to-neutral-400">
-                All Video Downloader
+              <span className="font-extrabold text-lg tracking-tight text-neutral-900 dark:text-white">
+                All Video <span className="text-violet-600 dark:text-violet-400">Downloader</span>
               </span>
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
-              Universal video downloader supporting YouTube, TikTok, Instagram, Twitter, Facebook, and thousands of other sites.
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs leading-relaxed">
+              An easy-to-use tool for saving publicly accessible media from supported websites.
             </p>
+            <a
+              href="mailto:rehan.ibex04@gmail.com"
+              className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+            >
+              <Mail className="h-4 w-4" />
+              rehan.ibex04@gmail.com
+            </a>
           </div>
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Legal</h3>
+          <nav className="space-y-3" aria-label="Explore">
+            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Explore</h3>
             <ul className="space-y-2">
-              {footerLinks.map((link) => (
-                <li key={link.href}>
+              {exploreLinks.map((link) => (
+                <li key={link.href + link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
                   >
                     {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
+
+          <nav className="space-y-3" aria-label="Legal">
+            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Legal</h3>
+            <ul className="space-y-2">
+              {legalLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Contact</h3>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="mailto:rehan.ibex04@gmail.com"
-                  className="inline-flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                >
-                  <Mail className="h-4 w-4" />
-                  rehan.ibex04@gmail.com
-                </a>
-              </li>
-            </ul>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 pt-2">
-              For personal use only. Respect content creators&apos; rights.
+            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">Please Note</h3>
+            <p className="text-xs leading-relaxed text-neutral-400 dark:text-neutral-500">
+              All Video Downloader is intended for personal use only. All videos and media
+              remain the property of their respective owners and content creators — please
+              respect their rights and each platform&apos;s terms of service.
             </p>
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-black/10 dark:border-white/10 flex items-center justify-center gap-4">
+        <div className="mt-10 pt-6 border-t border-neutral-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
             &copy; {new Date().getFullYear()} All Video Downloader. All rights reserved.
           </p>
-          <Link href="/admin" className="text-xs text-neutral-500 hover:text-red-400 transition-colors">
+          <Link href="/admin" className="text-xs text-neutral-400 hover:text-violet-500 dark:text-neutral-500 dark:hover:text-violet-400 transition-colors">
             Admin
           </Link>
         </div>

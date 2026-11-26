@@ -3,7 +3,7 @@
 import { Progress } from './ui/progress';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Loader2, CheckCircle2, AlertTriangle, Download, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface DownloadProgressProps {
   formatLabel: string;
@@ -31,20 +31,20 @@ export default function DownloadProgress({
   const isFailed = status === 'failed';
 
   return (
-    <Card className="border border-white/10 dark:border-white/5 bg-white/5 dark:bg-black/20 backdrop-blur-md rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+    <Card className="rounded-3xl shadow-xl shadow-violet-600/5 animate-in fade-in zoom-in-95 duration-300 dark:shadow-black/30" role="status" aria-live="polite">
       <CardContent className="p-6">
         <div className="flex flex-col space-y-4">
-          
+
           {/* Header Status */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              {isPending && <Loader2 className="h-5 w-5 text-neutral-400 animate-spin" />}
-              {isDownloading && <Loader2 className="h-5 w-5 text-red-500 animate-spin" />}
-              {isMerging && <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />}
+              {isPending && <Loader2 className="h-5 w-5 animate-spin text-neutral-400" />}
+              {isDownloading && <Loader2 className="h-5 w-5 animate-spin text-violet-600 dark:text-violet-400" />}
+              {isMerging && <Loader2 className="h-5 w-5 animate-spin text-cyan-600 dark:text-cyan-400" />}
               {isCompleted && <CheckCircle2 className="h-5 w-5 text-emerald-500" />}
               {isFailed && <AlertTriangle className="h-5 w-5 text-red-500" />}
-              
-              <span className="font-semibold text-white text-sm md:text-base">
+
+              <span className="text-sm font-semibold text-neutral-900 md:text-base dark:text-white">
                 {isPending && 'Queuing download job...'}
                 {isDownloading && `Downloading in ${formatLabel}...`}
                 {isMerging && 'Merging audio and video streams (FFmpeg)...'}
@@ -52,14 +52,14 @@ export default function DownloadProgress({
                 {isFailed && 'Download Failed'}
               </span>
             </div>
-            
+
             {isCompleted && (
-              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10">
+              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Success
               </span>
             )}
             {isFailed && (
-              <span className="text-xs font-semibold uppercase tracking-wider text-red-400 px-2 py-0.5 rounded bg-red-500/10">
+              <span className="rounded bg-red-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
                 Failed
               </span>
             )}
@@ -68,9 +68,9 @@ export default function DownloadProgress({
           {/* Progress Bar & Percentage */}
           {!isFailed && (
             <div className="space-y-2">
-              <div className="flex justify-between text-xs font-semibold text-neutral-400">
+              <div className="flex justify-between text-xs font-semibold text-neutral-500 dark:text-neutral-400">
                 <span>Progress</span>
-                <span className="text-white">{Math.round(percent)}%</span>
+                <span className="text-neutral-900 dark:text-white">{Math.round(percent)}%</span>
               </div>
               <Progress value={percent} />
             </div>
@@ -78,21 +78,21 @@ export default function DownloadProgress({
 
           {/* Stats (Speed & ETA) */}
           {isDownloading && (
-            <div className="grid grid-cols-2 gap-4 rounded-xl bg-white/5 p-3 text-center border border-white/5">
+            <div className="grid grid-cols-2 gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 text-center dark:border-white/5 dark:bg-white/5">
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Speed</span>
-                <span className="text-sm font-semibold text-white mt-0.5">{speed}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Speed</span>
+                <span className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">{speed}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">Time Remaining</span>
-                <span className="text-sm font-semibold text-white mt-0.5">{eta}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Time Remaining</span>
+                <span className="mt-0.5 text-sm font-semibold text-neutral-900 dark:text-white">{eta}</span>
               </div>
             </div>
           )}
 
           {isMerging && (
-            <div className="rounded-xl bg-amber-500/5 p-3 text-center border border-amber-500/10 animate-pulse">
-              <span className="text-xs text-amber-300">
+            <div className="animate-pulse rounded-xl border border-cyan-500/15 bg-cyan-500/5 p-3 text-center">
+              <span className="text-xs text-cyan-700 dark:text-cyan-300">
                 This may take a moment for large 1080p+ files as FFmpeg joins the streams.
               </span>
             </div>
@@ -100,7 +100,7 @@ export default function DownloadProgress({
 
           {/* Error Message */}
           {isFailed && (
-            <div className="rounded-xl bg-red-500/10 p-3 border border-red-500/20 text-xs md:text-sm text-red-300">
+            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-700 md:text-sm dark:text-red-300" role="alert">
               {error || 'An unexpected error occurred during the download process.'}
             </div>
           )}
@@ -108,7 +108,7 @@ export default function DownloadProgress({
           {/* Actions */}
           <div className="flex justify-end pt-2">
             {(isCompleted || isFailed) && (
-              <Button variant="outline" size="sm" onClick={onClose} className="rounded-xl h-9 px-4">
+              <Button variant="outline" size="sm" onClick={onClose} className="h-9 rounded-xl px-4">
                 Close
               </Button>
             )}
